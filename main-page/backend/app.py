@@ -2,9 +2,9 @@ from flask import Flask
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-from models import User
 from dotenv import load_dotenv
 import os
+from models import User
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -15,7 +15,7 @@ def create_app():
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    CORS(app)
+    CORS(app, supports_credentials=True)
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -23,12 +23,14 @@ def create_app():
     from routes.auth import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
 
+    from routes.main import main_bp
+    app.register_blueprint(main_bp, url_prefix='/main')
+
     @app.route('/')
     def home():
         return {'message': 'API running'}
 
     return app
-
 
 @login_manager.user_loader
 def load_user(user_id):
