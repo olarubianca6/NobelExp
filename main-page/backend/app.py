@@ -1,12 +1,9 @@
 from flask import Flask
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
 from dotenv import load_dotenv
 import os
 
-db = SQLAlchemy()
-login_manager = LoginManager()
+from extensions import db, login_manager
 
 def create_app():
     app = Flask(__name__)
@@ -19,9 +16,8 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
 
-    from routes.auth import auth_bp
-    from routes.nobel import nobel_bp
-
+    from auth import auth_bp
+    from nobel import nobel_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(nobel_bp, url_prefix='/api')
 
@@ -29,16 +25,19 @@ def create_app():
     def home():
         return {'message': 'API running'}
 
+    with app.app_context():
+        from models import User
+        db.create_all()
+
     return app
 
 
+from models import User
 @login_manager.user_loader
 def load_user(user_id):
-    from models import User
     return User.query.get(int(user_id))
+
 
 if __name__ == '__main__':
     app = create_app()
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)

@@ -1,7 +1,7 @@
-from flask import Blueprint, request, jsonify
-from ..app import db
-from ..models import User
+from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_user, logout_user, login_required
+from models import User
+from extensions import db
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -37,3 +37,12 @@ def login():
 def logout():
     logout_user()
     return jsonify({'message': 'Logged out'})
+
+@auth_bp.route('/delete', methods=['DELETE'])
+@login_required
+def delete_account():
+    from flask_login import current_user
+    db.session.delete(current_user)
+    db.session.commit()
+    logout_user()
+    return jsonify({'message': 'Account deleted successfully'})
