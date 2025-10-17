@@ -1,4 +1,7 @@
-Flask
-Flask-Cors
+Flask~=3.1.2
+Flask-Cors~=6.0.1
 Flask-SQLAlchemy
-Flask-Login
+Flask-Login~=0.6.3
+python-dotenv~=1.1.1
+requests~=2.32.5
+Werkzeug~=3.1.3
