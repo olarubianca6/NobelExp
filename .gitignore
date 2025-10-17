@@ -1,0 +1,11 @@
+main-page/backend/venv/
+main-page/backend/__pycache__/
+main-page/backend/db.sqlite3
+*.pyc
+
+main-page/backend/.env
+
+main-page/frontend/node_modules/
+main-page/frontend/build/
+
+.DS_Store
