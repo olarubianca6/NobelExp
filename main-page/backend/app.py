@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 import os
 
 from extensions import db, login_manager
+from models import User
+
 
 def create_app():
     app = Flask(__name__)
@@ -18,8 +20,10 @@ def create_app():
 
     from auth import auth_bp
     from nobel import nobel_bp
+    from laureates import laureat_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(nobel_bp, url_prefix='/api')
+    app.register_blueprint(nobel_bp, url_prefix='/api/nobel')
+    app.register_blueprint(laureat_bp, url_prefix='/api/laureates')
 
     @app.route('/')
     def home():
@@ -32,7 +36,6 @@ def create_app():
     return app
 
 
-from models import User
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))

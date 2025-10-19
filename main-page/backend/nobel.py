@@ -3,7 +3,8 @@ import requests
 
 nobel_bp = Blueprint("nobel", __name__)
 
-@nobel_bp.route("/nobel", methods=["GET"])
+
+@nobel_bp.route("/", methods=["GET"])
 def get_nobel_data():
     try:
         response = requests.get("https://api.nobelprize.org/v1/prize.json")
