@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 import os
 
 from extensions import db, login_manager
-from models import User
 
 
 def create_app():
@@ -13,7 +12,8 @@ def create_app():
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    CORS(app, supports_credentials=True)
+
+    CORS(app, supports_credentials=True, origins="http://localhost:5174")
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -30,12 +30,11 @@ def create_app():
         return {'message': 'API running'}
 
     with app.app_context():
-        from models import User
         db.create_all()
 
     return app
 
-
+from models import User
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
