@@ -1,5 +1,5 @@
-from flask import Blueprint, request, jsonify, current_app
-from flask_login import login_user, logout_user, login_required
+from flask import Blueprint, request, jsonify
+from flask_login import login_user, logout_user, login_required, current_user
 from models import User
 from extensions import db
 
@@ -41,7 +41,6 @@ def logout():
 @auth_bp.route('/delete', methods=['DELETE'])
 @login_required
 def delete_account():
-    from flask_login import current_user
     db.session.delete(current_user)
     db.session.commit()
     logout_user()

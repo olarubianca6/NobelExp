@@ -1,77 +1,147 @@
-import { useState, useEffect } from "react";
-import { fetchItems, addItem } from "../services/mainService";
-import Navbar from "../components/NavBar";
+import { useEffect, useMemo, useState } from "react";
+import { fetchNobelPrizes } from "../services/mainService";
 import ItemCard from "../components/ItemCard";
 import Pagination from "../components/Pagination";
 
 export default function MainPage() {
-  const [items, setItems] = useState([]);
-  const [name, setName] = useState("");
-  const [value, setValue] = useState("");
+  const [data, setData] = useState([]);
+  const [filtered, setFiltered] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5);
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [sort, setSort] = useState("year-desc");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
-  const loadItems = async () => {
-    const data = await fetchItems();
-    setItems(data);
-  };
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const prizes = await fetchNobelPrizes();
+        if (!mounted) return;
 
-  useEffect(() => { loadItems(); }, []);
+        const normalized = (prizes || []).map((p) => ({
+          ...p,
+          _categoryLabel: p.category?.includes("/")
+            ? decodeURIComponent(p.category.split("/").pop()).replace(/_/g, " ")
+            : p.category || "",
+        }));
 
-  const handleAdd = async () => {
-    try {
-      if (!name || !value) {
-        setError("All fields are required");
-        return;
+        setData(normalized);
+        setLoading(false);
+      } catch (e) {
+        setError(e?.response?.data?.error || e?.message || "Failed to load data");
+        setLoading(false);
       }
-      await addItem(name, parseInt(value));
-      setName(""); setValue(""); setError("");
-      loadItems();
-    } catch (err) {
-      setError(err.response?.data?.error || err.message);
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    let list = [...data];
+
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter((p) => {
+        const inCat = p._categoryLabel.toLowerCase().includes(q);
+        const inYear = String(p.year).toLowerCase().includes(q);
+        const inLaurs = (p.laureates || []).some((l) => l.name.toLowerCase().includes(q));
+        return inCat || inYear || inLaurs;
+      });
     }
-  };
 
-  const sortedItems = [...items].sort((a, b) =>
-    sortOrder === "asc" ? a.value - b.value : b.value - a.value
-  );
+    if (categoryFilter !== "all") {
+      list = list.filter((p) => p._categoryLabel.toLowerCase() === categoryFilter.toLowerCase());
+    }
 
-  const totalPages = Math.ceil(sortedItems.length / itemsPerPage);
-  const indexOfLast = currentPage * itemsPerPage;
-  const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentItems = sortedItems.slice(indexOfFirst, indexOfLast);
+    switch (sort) {
+      case "year-asc":
+        list.sort((a, b) => Number(a.year) - Number(b.year));
+        break;
+      case "year-desc":
+        list.sort((a, b) => Number(b.year) - Number(a.year));
+        break;
+      case "category-asc":
+        list.sort((a, b) => a._categoryLabel.localeCompare(b._categoryLabel));
+        break;
+      case "category-desc":
+        list.sort((a, b) => b._categoryLabel.localeCompare(a._categoryLabel));
+        break;
+      default:
+        break;
+    }
+
+    setFiltered(list);
+    setPage(1);
+  }, [data, search, categoryFilter, sort]);
+
+  const categories = useMemo(() => {
+    const set = new Set((data || []).map((p) => p._categoryLabel));
+    return ["all", ...Array.from(set).sort()];
+  }, [data]);
+
+  const total = filtered.length;
+  const start = (page - 1) * perPage;
+  const end = start + perPage;
+  const pageItems = filtered.slice(start, end);
+
+  if (loading) return <div className="main-loading">Loading…</div>;
+  if (error) return <div className="main-error">{error}</div>;
 
   return (
-    <div>
-      <Navbar />
-      <div className="p-6">
-        <h2 className="text-2xl mb-4">Add New Item</h2>
-        <div className="flex gap-2 mb-4">
-          <input type="text" placeholder="Name" value={name} onChange={e=>setName(e.target.value)} className="border p-2"/>
-          <input type="number" placeholder="Value" value={value} onChange={e=>setValue(e.target.value)} className="border p-2"/>
-          <button onClick={handleAdd} className="bg-blue-500 text-white p-2 rounded">Add</button>
-        </div>
-        {error && <p className="text-red-500 mb-2">{error}</p>}
-
-        <div className="flex justify-between mb-2">
-          <h2 className="text-2xl">Items</h2>
-          <button onClick={()=>setSortOrder(sortOrder==="asc"?"desc":"asc")} className="bg-gray-300 p-2 rounded">
-            Sort {sortOrder === "asc" ? "↑" : "↓"}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {currentItems.map(item => <ItemCard key={item.id} item={item} />)}
-        </div>
-
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
+    <div className="main-page">
+      <div className="main-controls">
+        <input
+          className="control-input"
+          placeholder="Search by category, year, or laureate…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
         />
+
+        <select
+          className="control-select"
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+        >
+          {categories.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+
+        <select
+          className="control-select"
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+        >
+          <option value="year-desc">Year ↓</option>
+          <option value="year-asc">Year ↑</option>
+          <option value="category-asc">Category A→Z</option>
+          <option value="category-desc">Category Z→A</option>
+        </select>
+
+        <select
+          className="control-select"
+          value={perPage}
+          onChange={(e) => setPerPage(Number(e.target.value))}
+        >
+          {[5,10,20,50].map(n => <option key={n} value={n}>{n}/page</option>)}
+        </select>
       </div>
+
+      <section className="items-grid">
+        {pageItems.map((p) => (
+          <ItemCard key={p.id} prize={p} />
+        ))}
+      </section>
+
+      <Pagination
+        currentPage={page}
+        totalItems={total}
+        itemsPerPage={perPage}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

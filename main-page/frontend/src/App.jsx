@@ -1,22 +1,22 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import Navbar from "./components/NavBar";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import MainPage from "./pages/MainPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import MainPage from "./pages/MainPage";
+import NavBar from "./components/NavBar";
 
-function App() {
-  const isAuthenticated = !!localStorage.getItem("loggedIn");
-
+export default function App() {
   return (
     <Router>
-      <Navbar />
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/" element={isAuthenticated ? <MainPage /> : <Navigate to="/login" />} />
-      </Routes>
+      <div className="app-container">
+        <NavBar />
+        <main className="app-main">
+          <Routes>
+            <Route path="/" element={<MainPage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </main>
+      </div>
     </Router>
   );
 }
-
-export default App;

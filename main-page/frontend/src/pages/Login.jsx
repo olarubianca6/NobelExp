@@ -1,37 +1,57 @@
 import { useState } from "react";
 import { login } from "../services/authService";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
+    setMsg("");
+    setError("");
     try {
-      if (!username || !password) {
-        setError("All fields are required");
-        return;
-      }
-      await login(username, password);
-      localStorage.setItem("loggedIn", "true");
+      const res = await login(username, password);
+      setMsg(res?.message || "Logged in");
       navigate("/");
-    } catch (err) {
-      setError(err.response?.data?.error || err.message);
+    } catch (e2) {
+      setError(e2?.response?.data?.error || e2?.message || "Login failed");
     }
   };
 
   return (
-    <div className="flex justify-center items-center h-screen">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2 w-80">
-        <h2 className="text-2xl mb-4">Login</h2>
-        <input type="text" placeholder="Username" value={username} onChange={(e)=>setUsername(e.target.value)} className="border p-2"/>
-        <input type="password" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)} className="border p-2"/>
-        <button type="submit" className="bg-green-500 text-white p-2 mt-2 rounded">Login</button>
-        {error && <p className="text-red-500">{error}</p>}
+    <div className="auth-page">
+      <h2 className="auth-title">Login</h2>
+      <form className="auth-form" onSubmit={submit}>
+        <label className="auth-label">
+          <span className="auth-label-text">Username</span>
+          <input
+            className="auth-input"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Enter username"
+          />
+        </label>
+        <label className="auth-label">
+          <span className="auth-label-text">Password</span>
+          <input
+            type="password"
+            className="auth-input"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter password"
+          />
+        </label>
+        <button className="auth-button" type="submit">Login</button>
       </form>
+      {msg && <p className="auth-message">{msg}</p>}
+      {error && <p className="auth-error">{error}</p>}
+      <p className="auth-switch">
+        No account? <Link to="/register" className="auth-link">Register</Link>
+      </p>
     </div>
   );
 }
