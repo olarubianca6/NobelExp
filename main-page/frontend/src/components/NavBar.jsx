@@ -35,8 +35,9 @@ export default function NavBar() {
   return (
     <nav className="navbar">
       <div className="navbar-inner">
-        <Link to="/" className="navbar-brand">Nobel Explorer</Link>
+        <Link to="/" className="navbar-brand">Nobel Prize Explorer</Link>
         <div className="navbar-links">
+          <a href="/statistics" className="navbar-link">Statistics</a>
           {!isLoggedIn && (
             <>
               <Link to="/login" className="navbar-link">Login</Link>
