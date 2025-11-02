@@ -46,8 +46,8 @@ export default function LaureatePage() {
   const initials = `${laureate.givenName?.value?.[0] || ""}${laureate.familyName?.value?.[0] || ""}`.toUpperCase();
 
   return (
-    <div className="relative w-full h-full bg-white shadow-xl rounded-3xl p-10">
-      <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-r from-blue-300 to-purple-500 rounded-t-3xl"></div>
+    <div className="relative left-1/2 -translate-x-1/2 w-full md:w-[60%] bg-white shadow-xl rounded-3xl p-10">
+      <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-r from-blue-100 to-cyan-700 rounded-t-3xl"></div>
 
       <div className="flex flex-col items-center relative z-10 mt-10">
         <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 text-white flex items-center justify-center text-3xl font-semibold shadow-md">
@@ -78,7 +78,7 @@ export default function LaureatePage() {
       <div className="mt-10 text-center">
         <Link
           to="/"
-          className="inline-block px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md transition font-medium"
+          className="inline-block px-6 py-2.5 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg shadow-md transition font-medium"
         >
           Go back
         </Link>
