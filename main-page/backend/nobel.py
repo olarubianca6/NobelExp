@@ -110,12 +110,6 @@ def count_nobel_prizes():
 
 @nobel_bp.route("/stats", methods=["GET"])
 def nobel_statistics():
-    """
-    Return global Nobel statistics:
-      - total number of prizes
-      - total number of laureates
-      - prizes per category
-    """
     query = """
         PREFIX nobel: <http://data.nobelprize.org/terms/>
         PREFIX foaf:  <http://xmlns.com/foaf/0.1/>
@@ -143,9 +137,7 @@ def nobel_statistics():
 
         categories = {}
         total_prizes = 0
-        total_laureates = set()  # pentru a evita dublurile
 
-        # Parcurgem rezultatele
         for r in rows:
             cat_uri = r["category"]["value"]
             cat_name = cat_uri.split("/")[-1].replace("_", " ")
@@ -153,7 +145,6 @@ def nobel_statistics():
             categories[cat_name] = count
             total_prizes += count
 
-        # Al doilea query pentru total laureați (fără dubluri)
         total_query = """
             PREFIX nobel: <http://data.nobelprize.org/terms/>
             PREFIX foaf:  <http://xmlns.com/foaf/0.1/>
