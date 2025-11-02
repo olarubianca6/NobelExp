@@ -2,11 +2,16 @@ from flask import Blueprint, jsonify, request
 from sparql import run_sparql_strict, SparqlError
 
 nobel_bp = Blueprint("nobel", __name__)
-
 @nobel_bp.route("/", methods=["GET"])
 def get_nobel_prizes():
     limit = int(request.args.get("limit", 10))
     offset = int(request.args.get("offset", 0))
+    category = request.args.get("category")
+
+    filters = []
+    if category:
+        filters.append(f"?prize nobel:category <{category}> .")
+    filter_str = "\n".join(filters)
 
     subquery = f"""
         PREFIX nobel: <http://data.nobelprize.org/terms/>
@@ -16,6 +21,7 @@ def get_nobel_prizes():
         WHERE {{
           ?prize a nobel:NobelPrize ;
                  nobel:year ?year .
+          {filter_str}
         }}
         ORDER BY DESC(xsd:integer(?year))
         LIMIT {limit}
@@ -92,10 +98,23 @@ def get_nobel_prizes():
 
 @nobel_bp.route("/count", methods=["GET"])
 def count_nobel_prizes():
-    query = """
+    category = request.args.get("category")
+
+    filters = []
+    if category and category != "all":
+        filters.append(f"?prize nobel:category <{category}> .")
+
+    filter_str = "\n".join(filters)
+
+    query = f"""
         PREFIX nobel: <http://data.nobelprize.org/terms/>
+        PREFIX xsd:   <http://www.w3.org/2001/XMLSchema#>
         SELECT (COUNT(DISTINCT ?prize) AS ?total)
-        WHERE { ?prize a nobel:NobelPrize . }
+        WHERE {{
+          ?prize a nobel:NobelPrize ;
+                 nobel:year ?year .
+          {filter_str}
+        }}
     """
     try:
         rows, _ = run_sparql_strict(query)
