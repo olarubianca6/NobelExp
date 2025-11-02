@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchNobelPrizes } from "../services/mainService";
+import { useNobelStore } from "../store/nobelStore";
 import ItemCard from "../components/ItemCard";
 import Pagination from "../components/Pagination";
 
 export default function MainPage() {
-  const [data, setData] = useState([]);
+  const { prizes, loading, error, fetchNobelPrizes } = useNobelStore();
   const [filtered, setFiltered] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sort, setSort] = useState("year-desc");
@@ -15,45 +13,28 @@ export default function MainPage() {
   const [perPage, setPerPage] = useState(10);
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        setLoading(true);
-        const prizes = await fetchNobelPrizes();
-        if (!mounted) return;
-
-        const normalized = (prizes || []).map((p) => ({
-          ...p,
-          _categoryLabel: p.category?.includes("/")
-            ? decodeURIComponent(p.category.split("/").pop()).replace(/_/g, " ")
-            : p.category || "",
-        }));
-
-        setData(normalized);
-        setLoading(false);
-      } catch (e) {
-        setError(e?.response?.data?.error || e?.message || "Failed to load data");
-        setLoading(false);
-      }
-    })();
-    return () => { mounted = false; };
-  }, []);
+    fetchNobelPrizes();
+  }, [fetchNobelPrizes]);
 
   useEffect(() => {
-    let list = [...data];
+    let list = [...prizes];
 
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter((p) => {
         const inCat = p._categoryLabel.toLowerCase().includes(q);
         const inYear = String(p.year).toLowerCase().includes(q);
-        const inLaurs = (p.laureates || []).some((l) => l.name.toLowerCase().includes(q));
+        const inLaurs = (p.laureates || []).some((l) =>
+          l.name.toLowerCase().includes(q)
+        );
         return inCat || inYear || inLaurs;
       });
     }
 
     if (categoryFilter !== "all") {
-      list = list.filter((p) => p._categoryLabel.toLowerCase() === categoryFilter.toLowerCase());
+      list = list.filter(
+        (p) => p._categoryLabel.toLowerCase() === categoryFilter.toLowerCase()
+      );
     }
 
     switch (sort) {
@@ -75,12 +56,12 @@ export default function MainPage() {
 
     setFiltered(list);
     setPage(1);
-  }, [data, search, categoryFilter, sort]);
+  }, [prizes, search, categoryFilter, sort]);
 
   const categories = useMemo(() => {
-    const set = new Set((data || []).map((p) => p._categoryLabel));
+    const set = new Set((prizes || []).map((p) => p._categoryLabel));
     return ["all", ...Array.from(set).sort()];
-  }, [data]);
+  }, [prizes]);
 
   const total = filtered.length;
   const start = (page - 1) * perPage;
@@ -106,7 +87,9 @@ export default function MainPage() {
           onChange={(e) => setCategoryFilter(e.target.value)}
         >
           {categories.map((c) => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c} value={c}>
+              {c}
+            </option>
           ))}
         </select>
 
@@ -126,7 +109,11 @@ export default function MainPage() {
           value={perPage}
           onChange={(e) => setPerPage(Number(e.target.value))}
         >
-          {[5,10,20,50].map(n => <option key={n} value={n}>{n}/page</option>)}
+          {[5, 10, 20, 50].map((n) => (
+            <option key={n} value={n}>
+              {n}/page
+            </option>
+          ))}
         </select>
       </div>
 

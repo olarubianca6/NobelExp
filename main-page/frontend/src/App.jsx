@@ -1,9 +1,11 @@
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import MainPage from "./pages/MainPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Statistics from "./pages/Statistics";
 import NavBar from "./components/NavBar";
+import ProtectedRoute from "./components/ProtectedRoute";
+import LaureatePage from "./pages/LaureatePage";
 
 export default function App() {
   return (
@@ -12,10 +14,32 @@ export default function App() {
         <NavBar />
         <main className="app-main">
           <Routes>
-            <Route path="/" element={<MainPage />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <MainPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/statistics"
+              element={
+                <ProtectedRoute>
+                  <Statistics />
+                </ProtectedRoute>
+              }
+            />
+            <Route 
+              path="/laureates/:id" 
+              element={ 
+                <ProtectedRoute>
+                  <LaureatePage />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/statistics" element={<Statistics />} />
           </Routes>
         </main>
       </div>

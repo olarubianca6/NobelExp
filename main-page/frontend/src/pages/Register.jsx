@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { register } from "../services/authService";
+import { useAuthStore } from "../store/authStore";
 import { Link, useNavigate } from "react-router-dom";
 
 export default function Register() {
@@ -8,17 +8,23 @@ export default function Register() {
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { register } = useAuthStore();
 
   const submit = async (e) => {
     e.preventDefault();
     setMsg("");
     setError("");
+
     try {
       const res = await register(username, password);
-      setMsg(res?.message || "Registered");
-      navigate("/login");
+      setMsg(res?.message || "Registered successfully!");
+      setTimeout(() => navigate("/login"), 800);
     } catch (e2) {
-      setError(e2?.response?.data?.error || e2?.message || "Registration failed");
+      setError(
+        e2?.response?.data?.error ||
+        e2?.message ||
+        "Registration failed"
+      );
     }
   };
 
@@ -33,6 +39,7 @@ export default function Register() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Choose a username"
+            required
           />
         </label>
         <label className="auth-label">
@@ -43,14 +50,23 @@ export default function Register() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Choose a password"
+            required
           />
         </label>
-        <button className="auth-button" type="submit">Create account</button>
+
+        <button className="auth-button" type="submit">
+          Create account
+        </button>
       </form>
+
       {msg && <p className="auth-message">{msg}</p>}
       {error && <p className="auth-error">{error}</p>}
+
       <p className="auth-switch">
-        Already have an account? <Link to="/login" className="auth-link">Login</Link>
+        Already have an account?{" "}
+        <Link to="/login" className="auth-link">
+          Login
+        </Link>
       </p>
     </div>
   );

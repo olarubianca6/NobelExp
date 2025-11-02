@@ -10,7 +10,7 @@ def get_nobel_prizes():
         PREFIX foaf:  <http://xmlns.com/foaf/0.1/>
         PREFIX xsd:   <http://www.w3.org/2001/XMLSchema#>
 
-        SELECT ?prize ?year ?category ?laureateName WHERE {
+        SELECT ?prize ?year ?category ?laureate ?laureateName WHERE {
           ?prize a nobel:NobelPrize ;
                  nobel:year ?year ;
                  nobel:category ?category ;
@@ -39,7 +39,12 @@ def get_nobel_prizes():
                     "category": r["category"]["value"],
                     "laureates": set()
                 }
-            prizes[uri]["laureates"].add(r["laureateName"]["value"])
+
+            laureate_uri = r["laureate"]["value"]
+            laureate_name = r["laureateName"]["value"]
+
+            # folosim tuple ca să păstrăm (id, name)
+            prizes[uri]["laureates"].add((laureate_uri, laureate_name))
 
         result = []
         for prize in prizes.values():
@@ -47,7 +52,13 @@ def get_nobel_prizes():
                 "id": prize["id"],
                 "year": prize["year"],
                 "category": prize["category"],
-                "laureates": [{"name": name} for name in sorted(prize["laureates"])]
+                "laureates": [
+                    {
+                        "id": l_id,
+                        "name": l_name
+                    }
+                    for (l_id, l_name) in sorted(prize["laureates"], key=lambda x: x[1])
+                ],
             })
 
         return jsonify(result)

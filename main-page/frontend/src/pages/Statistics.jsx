@@ -1,39 +1,25 @@
-import { useEffect, useState } from "react";
-import { fetchNobelPrizes } from "../services/mainService";
+import { useEffect } from "react";
+import { useNobelStore } from "../store/nobelStore";
 
 export default function Statistics() {
-  const [stats, setStats] = useState(null);
+  const { prizes, stats, loading, error, fetchNobelPrizes, computeStats } = useNobelStore();
 
   useEffect(() => {
-    async function fetchStats() {
-      const data = await fetchNobelPrizes();
-
-      const categories = {};
-      let totalLaureates = 0;
-
-      data.forEach((item) => {
-        categories[item.category] = (categories[item.category] || 0) + 1;
-        totalLaureates += item.laureates.length;
-      });
-
-      const sortedCategories = Object.entries(categories).sort((a, b) => b[1] - a[1]);
-      const highestCount = sortedCategories[0][1];
-
-      setStats({
-        totalPrizes: data.length,
-        totalLaureates,
-        categories,
-      });
-    }
-
-    fetchStats();
-  }, []);
+    (async () => {
+      if (prizes.length === 0) {
+        await fetchNobelPrizes();
+      }
+      computeStats();
+    })();
+  }, [fetchNobelPrizes, computeStats]);
 
   const formatCategory = (uri) => {
     return uri.split("/").pop().replace(/_/g, " ");
   };
 
-  if (!stats) return <p className="stats-loading">Loading...</p>;
+  if (loading) return <p className="stats-loading">Loading…</p>;
+  if (error) return <p className="stats-error">{error}</p>;
+  if (!stats) return <p className="stats-loading">No data yet…</p>;
 
   return (
     <div className="stats-container">

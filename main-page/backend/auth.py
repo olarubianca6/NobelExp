@@ -23,20 +23,24 @@ def register():
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    if not data or not data.get('username') or not data.get('password'):
-        return jsonify({'error': 'Missing fields'}), 400
+    user = User.query.filter_by(username=data.get('username')).first()
+    if not user or not user.check_password(data.get('password')):
+        return {'error': 'Invalid credentials'}, 401
 
-    user = User.query.filter_by(username=data['username']).first()
-    if user and user.check_password(data['password']):
-        login_user(user)
-        return jsonify({'message': 'Login successful'})
-    return jsonify({'error': 'Invalid credentials'}), 401
+    login_user(user)
+    return jsonify({'message': 'Logged in successfully', 'user': user.username}), 200
+
 
 @auth_bp.route('/logout', methods=['POST'])
 @login_required
 def logout():
     logout_user()
-    return jsonify({'message': 'Logged out'})
+    return {'message': 'Logged out'}
+
+@auth_bp.route('/check', methods=['GET'])
+@login_required
+def check_auth():
+    return {'user': current_user.username}, 200
 
 @auth_bp.route('/delete', methods=['DELETE'])
 @login_required
