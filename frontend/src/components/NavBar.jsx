@@ -1,12 +1,14 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom"
 import { useAuthStore } from "../store/authStore";
 import { useState } from "react";
 
 export default function NavBar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, user, logout, deleteAccount } = useAuthStore();
   const [error, setError] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const isOnStatistics = location.pathname.startsWith("/statistics")
 
   const handleLogout = async () => {
     setError("");
@@ -31,18 +33,21 @@ export default function NavBar() {
 
   return (
     <nav className="h-[80px] bg-white shadow-md px-6 py-3 flex justify-between items-center relative">
-      <Link to="/" className="text-cyan-700 text-3xl font-semibold">
+      <Link to="/" className="hidden md:flex text-cyan-700 text-3xl font-semibold">
         Nobel Prize Explorer
+      </Link>
+      <Link to="/" className="flex md:hidden text-cyan-700 text-3xl font-semibold">
+        NPE
       </Link>
 
       <div className="flex items-center gap-6">
         {isAuthenticated ? (
           <>
             <Link
-              to="/statistics"
+                 to={isOnStatistics ? "/" : "/statistics"}
               className="text-cyan-800 hover:text-cyan-900"
             >
-              Statistics
+              {isOnStatistics ? "Prizes" : "Statistics"}
             </Link>
 
             <div className="relative">
