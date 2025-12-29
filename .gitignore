@@ -1,11 +1,22 @@
-main-page/backend/venv/
-main-page/backend/__pycache__/
-main-page/backend/db.sqlite3
+# Python / venv / cache
+backend/venv/
+backend/__pycache__/
 *.pyc
 
-main-page/backend/.env
+# Local DB
+backend/app/instance/db.sqlite3
+backend/.idea/dataSources.xml
 
-main-page/frontend/node_modules/
-main-page/frontend/build/
+# Env secrets
+backend/.env
+.env
+.env.*
+!.env.example
+!.env.template
 
+# Frontend
+frontend/node_modules/
+frontend/build/
+
+# OS
 .DS_Store
