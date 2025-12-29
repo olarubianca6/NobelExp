@@ -9,7 +9,7 @@ def get_nobel_prizes():
     category = request.args.get("category")
 
     filters = []
-    if category:
+    if category and category != "all":
         filters.append(f"?prize nobel:category <{category}> .")
     filter_str = "\n".join(filters)
 
@@ -129,54 +129,79 @@ def count_nobel_prizes():
 
 @nobel_bp.route("/stats", methods=["GET"])
 def nobel_statistics():
-    query = """
+    category = request.args.get("category")
+    year_from = request.args.get("yearFrom")
+    year_to = request.args.get("yearTo")
+
+    filters = []
+    if category and category != "all":
+        filters.append(f"?prize nobel:category <{category}> .")
+
+    if year_from and year_from.isdigit():
+        filters.append(f"FILTER(xsd:integer(?year) >= {int(year_from)})")
+    if year_to and year_to.isdigit():
+        filters.append(f"FILTER(xsd:integer(?year) <= {int(year_to)})")
+
+    filter_str = "\n".join(filters)
+
+    per_category_query = f"""
         PREFIX nobel: <http://data.nobelprize.org/terms/>
-        PREFIX foaf:  <http://xmlns.com/foaf/0.1/>
         PREFIX xsd:   <http://www.w3.org/2001/XMLSchema#>
 
-        SELECT ?category (COUNT(DISTINCT ?prize) AS ?prizeCount) (COUNT(DISTINCT ?laureate) AS ?laureateCount)
-        WHERE {
+        SELECT ?category
+               (COUNT(DISTINCT ?prize) AS ?prizeCount)
+               (COUNT(DISTINCT ?laureate) AS ?laureateCount)
+        WHERE {{
           ?prize a nobel:NobelPrize ;
                  nobel:category ?category ;
+                 nobel:year ?year ;
                  nobel:laureate ?laureate .
-          ?laureate foaf:name ?laureateName .
-        }
+          {filter_str}
+        }}
         GROUP BY ?category
-        ORDER BY DESC(xsd:integer(?prizeCount))
+        ORDER BY DESC(?prizeCount)
     """
-    try:
-        rows, _ = run_sparql_strict(query)
 
-        if not rows:
-            return jsonify({
-                "totalPrizes": 0,
-                "totalLaureates": 0,
-                "categories": {}
-            })
+    totals_query = f"""
+        PREFIX nobel: <http://data.nobelprize.org/terms/>
+        PREFIX xsd:   <http://www.w3.org/2001/XMLSchema#>
+
+        SELECT (COUNT(DISTINCT ?prize) AS ?totalPrizes)
+               (COUNT(DISTINCT ?laureate) AS ?totalLaureates)
+        WHERE {{
+          ?prize a nobel:NobelPrize ;
+                 nobel:year ?year ;
+                 nobel:laureate ?laureate .
+          {filter_str}
+        }}
+    """
+
+    try:
+        rows, _ = run_sparql_strict(per_category_query)
+        totals_rows, _ = run_sparql_strict(totals_query)
+
+        total_prizes = int(totals_rows[0]["totalPrizes"]["value"]) if totals_rows else 0
+        total_laureates = int(totals_rows[0]["totalLaureates"]["value"]) if totals_rows else 0
 
         categories = {}
-        total_prizes = 0
+        laureates_per_category = {}
 
-        for r in rows:
+        for r in rows or []:
             cat_uri = r["category"]["value"]
             cat_name = cat_uri.split("/")[-1].replace("_", " ")
-            count = int(r["prizeCount"]["value"])
-            categories[cat_name] = count
-            total_prizes += count
-
-        total_query = """
-            PREFIX nobel: <http://data.nobelprize.org/terms/>
-            PREFIX foaf:  <http://xmlns.com/foaf/0.1/>
-            SELECT (COUNT(DISTINCT ?laureate) AS ?totalLaureates)
-            WHERE { ?laureate a foaf:Person . }
-        """
-        total_rows, _ = run_sparql_strict(total_query)
-        total_laureates = int(total_rows[0]["totalLaureates"]["value"]) if total_rows else 0
+            categories[cat_name] = int(r["prizeCount"]["value"])
+            laureates_per_category[cat_name] = int(r["laureateCount"]["value"])
 
         return jsonify({
             "totalPrizes": total_prizes,
             "totalLaureates": total_laureates,
-            "categories": categories
+            "categories": categories,
+            "laureatesPerCategory": laureates_per_category,  # dacă vrei să faci și al doilea chart
+            "filters": {
+                "category": category or "all",
+                "yearFrom": year_from,
+                "yearTo": year_to
+            }
         })
 
     except SparqlError as e:
@@ -185,3 +210,4 @@ def nobel_statistics():
             "status": e.status,
             "details": e.body_preview
         }), 502
+
