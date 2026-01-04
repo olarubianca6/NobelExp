@@ -1,0 +1,34 @@
+@prefix as: <https://www.w3.org/ns/activitystreams#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix nexp: <https://nobel-explorer.example/ns#> .
+@prefix schema: <https://schema.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:nobel-explorer:user:4> a foaf:Person ;
+    foaf:mbox <mailto:daniel.bojescu@mail.com> ;
+    schema:mail "daniel.bojescu@mail.com" .
+
+[] a as:Like ;
+    nexp:kind "prize" ;
+    schema:dateCreated "2026-01-04T18:15:46.689591+00:00"^^xsd:dateTime ;
+    as:actor <urn:nobel-explorer:user:4> ;
+    as:object <http://data.nobelprize.org/resource/nobelprize/Chemistry/2024> .
+
+[] a as:Like ;
+    nexp:kind "prize" ;
+    schema:dateCreated "2026-01-04T18:15:23.232815+00:00"^^xsd:dateTime ;
+    as:actor <urn:nobel-explorer:user:4> ;
+    as:object <http://data.nobelprize.org/resource/nobelprize/Physics/2024> .
+
+[] a as:Like ;
+    nexp:kind "prize" ;
+    schema:dateCreated "2026-01-04T13:05:04.793316+00:00"^^xsd:dateTime ;
+    as:actor <urn:nobel-explorer:user:4> ;
+    as:object <http://data.nobelprize.org/resource/nobelprize/Economic_Sciences/2023> .
+
+[] a as:Like ;
+    nexp:kind "prize" ;
+    schema:dateCreated "2026-01-04T11:58:17.780953+00:00"^^xsd:dateTime ;
+    as:actor <urn:nobel-explorer:user:4> ;
+    as:object <http://data.nobelprize.org/resource/nobelprize/Economic_Sciences/2025> .
+

@@ -1,0 +1,17 @@
+# Python / venv / cache
+venv/
+__pycache__/
+*.pyc
+
+# Local DB
+app/instance/db.sqlite3
+.idea/dataSources.xml
+
+# Env secrets
+.env
+.env.*
+!.env.example
+!.env.template
+
+# OS
+.DS_Store
