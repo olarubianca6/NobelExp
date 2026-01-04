@@ -1,9 +1,9 @@
-from SPARQLWrapper import JSON
 import urllib.request, urllib.parse, ssl, json, time
 from urllib.error import HTTPError
 
 SPARQL_URL = "https://data.nobelprize.org/store/sparql"
 CTX = ssl._create_unverified_context()
+
 
 class SparqlError(RuntimeError):
     def __init__(self, status=None, content_type=None, body_preview=None, where=None):
@@ -12,6 +12,7 @@ class SparqlError(RuntimeError):
         self.content_type = content_type
         self.body_preview = body_preview
         self.where = where
+
 
 def run_sparql_strict(query: str, method: str = "POST"):
     encoded = urllib.parse.urlencode({"query": query}).encode("utf-8")

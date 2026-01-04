@@ -6,7 +6,9 @@ import Statistics from "./pages/Statistics"
 import NavBar from "./components/NavBar"
 import ProtectedRoute from "./components/ProtectedRoute"
 import LaureatePage from "./pages/LaureatePage"
-import ConfirmEmail from "./pages/ConfirmEmail" // ✅ adaugă
+import ConfirmEmail from "./pages/ConfirmEmail"
+import Favorites from "./pages/Favorites"
+import Footer from "./components/Footer"
 
 export default function App() {
   return (
@@ -43,8 +45,17 @@ export default function App() {
 
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route
+              path="/favorites"
+              element={
+                <ProtectedRoute>
+                  <Favorites />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </main>
+        <Footer />
       </div>
     </Router>
   )

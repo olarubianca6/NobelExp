@@ -1,53 +1,99 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom"
+import { useMemo } from "react"
+import { useRdfStore } from "../store/rdfStore"
+
+const btnPrimary =
+  "rounded-xl bg-white text-[#0097a7] px-3 py-2 text-sm font-semibold transition hover:outline-none hover:ring-3 hover:ring-[#0097a7]/25"
+const btnGhost =
+  "rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+
+function laureateRouteFromUri(uri) {
+  const id = uri?.split("/").pop()
+  return id ? `/laureates/${id}` : "#"
+}
 
 export default function ItemCard({ prize }) {
-  const { year, category, laureates } = prize;
-  const navigate = useNavigate();
+  const { likes, addLike, removeLike } = useRdfStore()
 
-  const readableCategory = category?.includes("/")
-    ? decodeURIComponent(category.split("/").pop()).replace(/_/g, " ")
-    : category || "";
+  const liked = useMemo(
+    () => (likes || []).some((l) => l.object === prize?.id),
+    [likes, prize?.id]
+  )
+
+  const title = useMemo(() => {
+    const cat = prize?._categoryLabel || "Nobel Prize"
+    const year = prize?.year || ""
+    return `${cat} (${year})`
+  }, [prize?._categoryLabel, prize?.year])
+
+  const toggleLike = async () => {
+    if (!prize?.id) return
+    if (liked) return removeLike(prize.id)
+    return addLike({ objectUri: prize.id, kind: "prize" })
+  }
 
   return (
     <article
-      className="h-[300px] bg-white rounded-3xl shadow-md hover:shadow-2xl transition-all duration-300 border border-gray-200 p-8 flex flex-col justify-between cursor-default transform hover:-translate-y-2 hover:scale-[1.02]"
+      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+      prefix="schema: https://schema.org/"
+      typeof="schema:Award"
+      about={prize?.id}
     >
-      <header className="mb-6">
-        <div className="flex justify-between items-center mb-3">
-          <span className="text-cyan-700 font-semibold text-2xl capitalize tracking-wide">
-            {readableCategory}
-          </span>
-          <span className="bg-cyan-100 text-cyan-800 text-base font-semibold px-4 py-1.5 rounded-full">
-            {year}
-          </span>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-semibold text-slate-900" property="schema:name">
+            {title}
+          </h3>
+
+          <div className="mt-1 text-sm text-slate-600">
+            <span className="font-semibold">Year:</span>{" "}
+            <span property="schema:awardYear">{prize?.year}</span>
+            {"  ·  "}
+            <span className="font-semibold">Category:</span>{" "}
+            <span property="schema:category">{prize?._categoryLabel}</span>
+          </div>
+
+          {prize?.id && (
+            <a
+              className="mt-2 inline-block text-sm font-semibold text-[#0097a7] hover:text-[#007e89] hover:underline"
+              href={prize.id}
+              target="_blank"
+              rel="noreferrer"
+              property="schema:url"
+            >
+              Open Nobel resource
+            </a>
+          )}
         </div>
-        <div className="h-[4px] bg-gradient-to-r from-cyan-600 to-blue-400 rounded-full w-1/3"></div>
-      </header>
 
-      <section>
-        <h4 className="text-gray-700 font-semibold mb-3 text-base uppercase tracking-wide">
-          Laureates
-        </h4>
+        <button type="button" onClick={toggleLike} className={liked ? btnGhost : btnPrimary}>
+          {liked ? "Saved" : "Save"}
+        </button>
+      </div>
 
-        {Array.isArray(laureates) && laureates.length > 0 ? (
-          <ul className="space-y-2">
-            {laureates.map((l, idx) => {
-              const shortId = l.id?.split("/").pop();
-              return (
-                <li
-                  key={idx}
-                  className="text-gray-800 hover:text-cyan-700 transition-colors cursor-pointer text-base leading-relaxed"
-                  onClick={() => shortId && navigate(`/laureates/${shortId}`)}
-                >
-                  • {l.name}
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="text-gray-500 text-base italic">No laureates listed.</p>
-        )}
-      </section>
+      <div className="mt-4">
+        <div className="text-sm font-semibold text-slate-700 mb-2">Laureates</div>
+
+        <ul className="space-y-1">
+          {(prize?.laureates || []).map((l) => (
+            <li
+              key={l.id}
+              className="text-sm text-slate-700"
+              typeof="schema:Person"
+              resource={l.id}
+            >
+              <Link
+                to={laureateRouteFromUri(l.id)}
+                className="font-semibold text-[#0097a7] hover:text-[#007e89] hover:underline"
+                property="schema:recipient"
+                resource={l.id}
+              >
+                <span property="schema:name">{l.name}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
     </article>
-  );
+  )
 }
