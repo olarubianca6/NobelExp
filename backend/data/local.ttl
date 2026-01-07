@@ -16,9 +16,15 @@
 
 [] a as:Like ;
     nexp:kind "prize" ;
-    schema:dateCreated "2026-01-04T18:15:23.232815+00:00"^^xsd:dateTime ;
+    schema:dateCreated "2026-01-04T19:18:24.533626+00:00"^^xsd:dateTime ;
     as:actor <urn:nobel-explorer:user:4> ;
-    as:object <http://data.nobelprize.org/resource/nobelprize/Physics/2024> .
+    as:object <http://data.nobelprize.org/resource/nobelprize/Chemistry/2025> .
+
+[] a as:Like ;
+    nexp:kind "prize" ;
+    schema:dateCreated "2026-01-04T19:18:27.471302+00:00"^^xsd:dateTime ;
+    as:actor <urn:nobel-explorer:user:4> ;
+    as:object <http://data.nobelprize.org/resource/nobelprize/Literature/2025> .
 
 [] a as:Like ;
     nexp:kind "prize" ;

@@ -1,10 +1,12 @@
 # Python / venv / cache
 venv/
 __pycache__/
+.idea/
 *.pyc
 
 # Local DB
-app/instance/db.sqlite3
+instance/db.sqlite3
+data/local.ttl
 .idea/dataSources.xml
 
 # Env secrets
