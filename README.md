@@ -33,7 +33,6 @@
   * [Screenshots](#camera-screenshots)
   * [Tech Stack](#space_invader-tech-stack)
   * [Features](#dart-features)
-  * [Color Reference](#art-color-reference)
   * [Environment Variables](#key-environment-variables)
 - [Getting Started](#toolbox-getting-started)
   * [Prerequisites](#bangbang-prerequisites)
@@ -127,14 +126,6 @@ Install dependencies
 
 ```bash
 npm install
-```
-
-<!-- Running Tests -->
-
-### :test_tube: Running Tests
-
-```bash
-npm test
 ```
 
 <!-- Run Locally -->
