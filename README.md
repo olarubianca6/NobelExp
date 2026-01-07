@@ -171,8 +171,13 @@ function App() {
 <!-- Roadmap -->
 ## :compass: Roadmap
 
-* [x] Todo 1
-* [ ] Todo 2
+* [x] Integrate Nobel Prize SPARQL endpoint for querying prizes, laureates, and institutions
+* [x] Implement responsive UI with filters (category/year) and pagination
+* [x] Add entity views (cards/details) with basic relations between prizes and laureates
+* [x] Implement authentication flow (register/login/logout) with email support (Mailtrap)
+* [x] Add saved favorites per prizes
+* [ ] Add User Profile page
+* [ ] Extend statistics dashboard (demographics, geography, category trends)
 
 <!-- Contact -->
 ## :handshake: Contact
