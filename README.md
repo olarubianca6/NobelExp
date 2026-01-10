@@ -285,6 +285,79 @@ for like in g.subjects(RDF.type, AS.Like):
     out.append({"object": str(obj), ...})
 ```
 
+**Favorites page (RDF-backed saved prizes)**  
+The **Favorites** page displays all items saved by the currently authenticated user. Each saved entry is stored as an RDF **ActivityStreams Like (AS:Like)** and rendered as a card containing:
+- **Kind** (e.g., `prize`) — a simple internal type marker (`nexp:kind`)
+- **Object** — the Nobel Prize URI saved by the user (`as:object`)
+- **Created** — the timestamp when the like was recorded (`schema:dateCreated`)
+- **Remove** button — deletes the corresponding Like triples from the local RDF store
+
+![Favorites page (RDF likes)](assets/usage/06-favorites.png)
+
+**How favorites are stored (ActivityStreams Like)**  
+When the user clicks **Save** on a prize card, the backend creates a new RDF node (blank node) of type `as:Like`, linking the current user (actor) to the saved prize (object):
+
+**Loading favorites (user-scoped list)**
+Favorites are user-scoped by checking `as:actor` against the current user URI and returning the saved objects sorted by creation time (newest first):
+
+```python
+# stores.rdf_store.RdfStore.list_likes(...)
+for like in g.subjects(RDF.type, AS.Like):
+    if (like, AS.actor, actor) not in g:
+        continue
+    obj = g.value(like, AS.object)
+    created = g.value(like, SCHEMA.dateCreated)
+    out.append({"object": str(obj), "createdAt": str(created)})
+out.sort(key=lambda x: x["createdAt"] or "", reverse=True)
+```
+
+**Removing favorites (deleting the Like node)**
+When the user clicks **Remove**, the backend finds Like nodes matching `(actor=user, object=targetURI)` and removes all triples for those nodes:
+
+```python
+# stores.rdf_store.RdfStore.remove_like(...)
+for like in g.subjects(RDF.type, AS.Like):
+    if (like, AS.actor, actor) in g and (like, AS.object, target) in g:
+        likes_to_remove.append(like)
+
+for like in likes_to_remove:
+    g.remove((like, None, None))
+
+if likes_to_remove:
+    self.save()
+```
+
+**Statistics dashboard (interactive + responsive)**  
+The **Statistics** page provides an overview of Nobel Prize data through aggregated metrics and charts. Users can explore distributions across categories and time ranges, and switch between prize-based and laureate-based views.
+
+![Statistics dashboard (responsive view)](assets/usage/07-statistics-responsive.png)
+
+**Filters and chart mode**  
+The top filter bar allows users to refine the statistics by:
+- **Category** (All categories or a specific one like Chemistry)
+- **Year from / Year to** (optional range filtering)
+- **Chart mode toggle**: **Prizes** vs **Laureates**  
+Press **Apply** to update the metrics and visualizations, or **Reset** to restore defaults.
+
+![Statistics filtered by category](assets/usage/08-statistics-chemistry.png)
+
+**What is computed and displayed**  
+After applying filters, the dashboard recomputes:
+- **Total Prizes** and **Total Laureates** for the selected filters
+- **Breakdown per category** (chart + list)  
+When filtering to a single category, the chart collapses accordingly and highlights the selected category totals.
+
+**Backend aggregation via SPARQL**  
+Statistics are computed server-side using SPARQL aggregation queries (GROUP BY + COUNT), ensuring consistent totals across UI and API.
+
+**Responsive UI (mobile/tablet/desktop)**
+The entire application is built with a **responsive layout**:
+
+* navigation adapts for smaller screens
+* filters collapse into compact panels
+* cards and charts reflow into a single-column layout on mobile
+  This ensures the same features (exploration, statistics, favorites) remain usable across devices and screen sizes.
+
 <!-- Roadmap -->
 ## :compass: Roadmap
 
