@@ -4,9 +4,25 @@
 @prefix schema: <https://schema.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
+<urn:nobel-explorer:user:7> a foaf:Person ;
+    foaf:mbox <mailto:test@mail.com> ;
+    schema:mail "test@mail.com" .
+
 <urn:nobel-explorer:user:4> a foaf:Person ;
     foaf:mbox <mailto:daniel.bojescu@mail.com> ;
     schema:mail "daniel.bojescu@mail.com" .
+
+[] a as:Like ;
+    nexp:kind "prize" ;
+    schema:dateCreated "2026-01-10T12:20:55.483745+00:00"^^xsd:dateTime ;
+    as:actor <urn:nobel-explorer:user:7> ;
+    as:object <http://data.nobelprize.org/resource/nobelprize/Economic_Sciences/2025> .
+
+[] a as:Like ;
+    nexp:kind "prize" ;
+    schema:dateCreated "2026-01-10T12:20:52.574649+00:00"^^xsd:dateTime ;
+    as:actor <urn:nobel-explorer:user:7> ;
+    as:object <http://data.nobelprize.org/resource/nobelprize/Chemistry/2025> .
 
 [] a as:Like ;
     nexp:kind "prize" ;
@@ -16,9 +32,15 @@
 
 [] a as:Like ;
     nexp:kind "prize" ;
-    schema:dateCreated "2026-01-04T18:15:23.232815+00:00"^^xsd:dateTime ;
+    schema:dateCreated "2026-01-04T19:18:24.533626+00:00"^^xsd:dateTime ;
     as:actor <urn:nobel-explorer:user:4> ;
-    as:object <http://data.nobelprize.org/resource/nobelprize/Physics/2024> .
+    as:object <http://data.nobelprize.org/resource/nobelprize/Chemistry/2025> .
+
+[] a as:Like ;
+    nexp:kind "prize" ;
+    schema:dateCreated "2026-01-04T19:18:27.471302+00:00"^^xsd:dateTime ;
+    as:actor <urn:nobel-explorer:user:4> ;
+    as:object <http://data.nobelprize.org/resource/nobelprize/Literature/2025> .
 
 [] a as:Like ;
     nexp:kind "prize" ;
