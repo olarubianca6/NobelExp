@@ -1,0 +1,46 @@
+# Logs
+frontend/logs
+frontend/*.log
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/lerna-debug.log*
+
+**/node_modules/
+frontend/dist
+frontend/dist-ssr
+frontend/*.local
+
+# Editor directories and files
+frontend/.vscode/*
+frontend/!.vscode/extensions.json
+frontend/.idea
+frontend/.DS_Store
+frontend/*.suo
+frontend/*.ntvs*
+frontend/*.njsproj
+frontend/*.sln
+frontend/*.sw?
+
+# Python / venv / cache
+backend/venv/
+**/__pycache__/
+**/*.pyc
+backend/.idea/
+backend/*.pyc
+
+# Local DB
+backend/instance/db.sqlite3
+backend/data/local.ttl
+backend/.idea/dataSources.xml
+
+# Env secrets
+backend/.env
+frontend/.env
+
+# OS
+backend/.DS_Store
+
+package-lock.json
+package.json

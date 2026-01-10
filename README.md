@@ -253,6 +253,24 @@ def count_nobel_prizes(category: str | None) -> int:
     """
 ```
 
+**Laureate details page (rich profile view)**  
+From any prize card, users can open a dedicated **Laureate** page (e.g., `/laureates/:id`) that displays enriched information about the selected person in a clean, responsive profile layout.
+
+![Laureate page](assets/usage/laureates.png)
+
+The page includes:
+- **Identity**: initials avatar + full name
+- **Core metadata**: gender, birth/death dates
+- **Locations**: birth place and (if available) death place
+- **Academic / institutional context**: affiliation (when present)
+- **Award linkage**: the associated award + prize label (when available)
+
+**UI notes**
+- The layout uses a gradient header, card-based info grid, and responsive spacing for mobile/tablet/desktop.
+- Icons are rendered with **lucide-react** (SVG icons), replacing emojis for a consistent UI style.
+
+> **Dependency:** make sure `lucide-react` is installed, otherwise the page may fail to render.
+
 **Favorites stored as RDF (ActivityStreams Like)**
 When a user clicks **Save**, the backend records the action as an RDF **Like** activity (ActivityStreams vocabulary), linked to:
 
