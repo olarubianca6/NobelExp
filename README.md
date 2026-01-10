@@ -41,7 +41,6 @@
   * [Deployment](#triangular_flag_on_post-deployment)
 - [Usage](#eyes-usage)
 - [Roadmap](#compass-roadmap)
-
 - [Contact](#handshake-contact)
 
 
@@ -157,15 +156,133 @@ npm run start
 <!-- Usage -->
 ## :eyes: Usage
 
-Use this space to tell a little more about your project and how it can be used. Show additional screenshots, code samples, demos or link to other resources.
+**Create account (Register page)**  
+A clean, responsive registration screen where users can create an account by providing an email address and a password.
+
+![Create account page](assets/usage/01-register.png)
+
+**Registration success → Email confirmation → Login**  
+After submitting the registration form, the app confirms the account was created and instructs the user to verify their email. A confirmation email is delivered to **Mailtrap** (testing inbox). After clicking **Confirm email**, the user is redirected back to the app where the email confirmation success message is displayed. The user can then log in using the **same email and password** used during registration.
+
+> **Confirmation message shown in-app:** “Email confirmed successfully. You can now log in.”
+
+![Registration success prompt](assets/usage/02-register-success.png)
+
+<table>
+  <tr>
+    <td width="50%">
+      <p><b>Mailtrap confirmation email</b></p>
+      <img src="assets/usage/03-mailtrap-confirm.png" alt="Mailtrap confirmation email" />
+    </td>
+    <td width="50%">
+      <p><b>In-app confirmation page</b></p>
+      <img src="assets/usage/04-email-confirmed.png" alt="Email confirmed page" />
+    </td>
+  </tr>
+</table>
+
+**Login with confirmed credentials**  
+Once the email is confirmed, the user can log in using their **email and password** and access the platform features (exploration, entity pages, statistics, favorites).
 
 
-```javascript
-import Component from 'my-project'
+**Explore prizes (filters, pagination, favorites stored as RDF likes)**  
+After logging in, the user lands on the **Prizes** page, where Nobel Prize entries are displayed as responsive cards. Each card includes the prize **year**, **category**, an external link to the official Nobel resource, and a list of **laureates**. Users can also save prizes to **Favorites** using the **Save** action (stored as RDF “likes”).
 
-function App() {
-  return <Component />
-}
+![Prizes page (filters + favorites)](assets/usage/05-prizes-page.png)
+
+**Filtering (Category + Limit)**  
+The page includes a Filters panel (drawer) that allows:
+- selecting a **Category** (or “All categories”)
+- choosing how many items to fetch per page via **Limit**
+- applying or resetting filters (**Apply / Reset**)
+
+**Server-side pagination (LIMIT + OFFSET)**  
+Pagination is implemented on the backend using SPARQL **LIMIT** and **OFFSET**, so the UI always loads a bounded page of results.  
+The total number of prizes matching the current filter is computed separately, enabling the UI to display ranges like “Showing 1–12 of 630” and to compute next/previous offsets.
+
+```python
+# Page query: fetch only the prize URIs for the current page
+subquery = f"""
+SELECT DISTINCT ?prize
+WHERE {{
+  ?prize a nobel:NobelPrize ;
+         nobel:year ?year .
+  {cat_filter}
+}}
+ORDER BY DESC(xsd:integer(?year))
+LIMIT {limit}
+OFFSET {offset}
+"""
+````
+
+To avoid heavy result sets and duplicates, the implementation uses a **two-step query**:
+
+1. fetch the **page of prize URIs** (LIMIT/OFFSET)
+2. fetch full details for only those URIs via a VALUES block
+
+```python
+# Step 2: fetch details only for the prizes in the current page
+prize_uris = [f"<{r['prize']['value']}>" for r in prize_rows]
+values_block = " ".join(prize_uris)
+
+full_query = f"""
+SELECT ?prize ?year ?category ?laureate ?laureateName
+WHERE {{
+  VALUES ?prize {{ {values_block} }}
+  ?prize a nobel:NobelPrize ;
+         nobel:year ?year ;
+         nobel:category ?category ;
+         nobel:laureate ?laureate .
+  ?laureate foaf:name ?laureateName .
+}}
+ORDER BY DESC(xsd:integer(?year))
+"""
+```
+
+The total number of matching prizes (for “Showing X–Y of Z”) is obtained with a dedicated COUNT query:
+
+```python
+def count_nobel_prizes(category: str | None) -> int:
+    query = f"""
+    SELECT (COUNT(DISTINCT ?prize) AS ?total)
+    WHERE {{
+      ?prize a nobel:NobelPrize ;
+             nobel:year ?year .
+      {cat_filter}
+    }}
+    """
+```
+
+**Favorites stored as RDF (ActivityStreams Like)**
+When a user clicks **Save**, the backend records the action as an RDF **Like** activity (ActivityStreams vocabulary), linked to:
+
+* the **actor** (the logged-in user)
+* the **object** (the prize URI)
+* a creation timestamp (`schema:dateCreated`)
+* an internal `nexp:kind` field (e.g., `"prize"`)
+
+Data is stored locally in a Turtle file (`data/local.ttl`) and can be exported/queryable via RDFLib.
+
+```python
+# stores.rdf_store.RdfStore.add_like(...)
+like = BNode()
+g.add((like, RDF.type, AS.Like))
+g.add((like, AS.actor, actor))
+g.add((like, AS.object, URIRef(object_uri)))
+g.add((like, SCHEMA.dateCreated, Literal(now, datatype=XSD.dateTime)))
+g.add((like, NEXP.kind, Literal(kind)))
+self.save()   # persists to Turtle (local.ttl)
+```
+
+Favorites are user-scoped (each Like is linked to the user’s URI) and can be listed later:
+
+```python
+# stores.rdf_store.RdfStore.list_likes(...)
+for like in g.subjects(RDF.type, AS.Like):
+    if (like, AS.actor, actor) not in g:
+        continue
+    obj = g.value(like, AS.object)
+    out.append({"object": str(obj), ...})
 ```
 
 <!-- Roadmap -->
