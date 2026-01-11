@@ -32,7 +32,6 @@ backend/*.pyc
 
 # Local DB
 backend/instance/db.sqlite3
-backend/data/local.ttl
 backend/.idea/dataSources.xml
 
 # Env secrets

@@ -56,30 +56,4 @@ export const useRdfStore = create((set, get) => ({
       throw err
     }
   },
-
-  exportTurtle: async () => {
-    try {
-      set({ loading: true, error: null })
-      const res = await axios.get(`${RDF_BASE}/export`, { responseType: "text" })
-      set({ turtle: res.data || "", loading: false })
-    } catch (err) {
-      set({
-        error: err?.response?.data?.error || err?.message || "Failed to export turtle",
-        loading: false,
-      })
-    }
-  },
-
-  runSparql: async (query) => {
-    try {
-      set({ loading: true, error: null })
-      const res = await axios.post(`${RDF_BASE}/sparql`, { query })
-      set({ sparqlResult: JSON.stringify(res.data, null, 2), loading: false })
-    } catch (err) {
-      set({
-        error: err?.response?.data?.error || err?.message || "SPARQL query failed",
-        loading: false,
-      })
-    }
-  },
 }))

@@ -24,7 +24,7 @@ class RdfConfig:
 
 def _default_config() -> RdfConfig:
     base = Path(__file__).resolve().parent
-    return RdfConfig(ttl_path=base / "../data" / "local.ttl")
+    return RdfConfig(ttl_path=base / "../instance" / "local.ttl")
 
 
 class RdfStore:

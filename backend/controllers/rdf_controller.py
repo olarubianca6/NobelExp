@@ -11,49 +11,6 @@ from services.rdf_service import (
 
 rdf_bp = Blueprint("rdf", __name__)
 
-
-@rdf_bp.get("/export")
-def export_rdf():
-    ttl = export_turtle()
-    return Response(ttl, mimetype="text/turtle")
-
-
-@rdf_bp.get("/sparql")
-def sparql_get():
-    q = request.args.get("query")
-    if not q:
-        return jsonify({"error": "Missing SPARQL query (?query=...)"}), 400
-
-    try:
-        json_str = sparql_to_json_str(q)
-        return Response(json_str, mimetype="application/sparql-results+json")
-    except Exception as e:
-        return jsonify({"error": "SPARQL query failed", "details": str(e)}), 400
-
-
-@rdf_bp.post("/sparql")
-def sparql_post():
-    q = None
-    if request.is_json:
-        body = request.get_json(silent=True) or {}
-        q = body.get("query")
-
-    if not q:
-        q = request.form.get("query")
-    if not q:
-        q = request.get_data(as_text=True)
-
-    q = (q or "").strip()
-    if not q:
-        return jsonify({"error": "Missing SPARQL query in body"}), 400
-
-    try:
-        json_str = sparql_to_json_str(q)
-        return Response(json_str, mimetype="application/sparql-results+json")
-    except Exception as e:
-        return jsonify({"error": "SPARQL query failed", "details": str(e)}), 400
-
-
 @rdf_bp.get("/likes")
 @login_required
 def get_likes():
