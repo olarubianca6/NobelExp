@@ -6,15 +6,15 @@
   </p>
 
 <!-- Badges -->
-<p>
-  <a href="">
-    <img src="https://img.shields.io/github/last-commit/olarubianca6/awesome-readme-template" alt="last update" />
+<p> 
+  <a href="https://github.com/olarubianca6/NobelExp/commits/main">
+    <img src="https://img.shields.io/github/last-commit/olarubianca6/NobelExp" alt="last update" />
   </a>
   <a href="https://github.com/olarubianca6/NobelExp/forks">
-    <img src="https://img.shields.io/github/forks/olarubianca6/awesome-readme-template" alt="forks" />
+    <img src="https://img.shields.io/github/forks/olarubianca6/NobelExp" alt="forks" />
   </a>
   <a href="https://github.com/olarubianca6/NobelExp/issues">
-    <img src="https://img.shields.io/github/issues/olarubianca6/awesome-readme-template" alt="open issues" />
+    <img src="https://img.shields.io/github/issues/olarubianca6/NobelExp" alt="open issues" />
   </a>
 </p>
    
