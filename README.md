@@ -7,16 +7,21 @@
 
 <!-- Badges -->
 <p>
+  <a href="">
+    <img src="https://img.shields.io/github/last-commit/olarubianca6/awesome-readme-template" alt="last update" />
+  </a>
   <a href="https://github.com/olarubianca6/NobelExp/forks">
-    <img src="https://img.shields.io/github/forks/Louis3797/awesome-readme-template" alt="forks" />
+    <img src="https://img.shields.io/github/forks/olarubianca6/awesome-readme-template" alt="forks" />
   </a>
   <a href="https://github.com/olarubianca6/NobelExp/issues">
-    <img src="https://img.shields.io/github/issues/Louis3797/awesome-readme-template" alt="open issues" />
+    <img src="https://img.shields.io/github/issues/olarubianca6/awesome-readme-template" alt="open issues" />
   </a>
 </p>
    
 <h4>
-    <a href="https://github.com/olarubianca6/NobelExp">Documentation</a>
+  <a href="https://github.com/olarubianca6/NobelExp/tree/main/docs/scholary/index.html">Documentation</a>
+  <span> · </span>
+    <a href="https://www.youtube.com/watch?v=A20fdzOnk8g">View Demo</a>
   <span> · </span>
     <a href="https://github.com/olarubianca6/NobelExp/issues">Report Bug</a>
   <span> · </span>
@@ -40,12 +45,12 @@
   * [Run Locally](#running-run-locally)
   * [Deployment](#triangular_flag_on_post-deployment)
 - [Usage](#eyes-usage)
+- [OpenAPI Specification](#openapi-specification)
 - [Roadmap](#compass-roadmap)
 - [Contact](#handshake-contact)
 
 
   
-
 <!-- About the Project -->
 ## :star2: About the Project
   <p>
@@ -101,12 +106,21 @@ To run this project, create a `.env` file based on the provided `.env.example` a
 <!-- Getting Started -->
 ## :toolbox: Getting Started
 
-<!-- Prerequisites -->
+
+### :bangbang: Prerequisites
+
+```md
 ### :bangbang: Prerequisites
 
 - Node.js (LTS) and npm installed
+- Python 3.11+ installed
+```
 
-<!-- Installation -->
+---
+
+### :gear: Installation
+
+````md
 ### :gear: Installation
 
 Clone the project
@@ -121,37 +135,79 @@ Go to the project directory
 cd NobelExp
 ```
 
-Install dependencies
+Install frontend dependencies
 
 ```bash
+cd frontend
 npm install
 ```
 
-<!-- Run Locally -->
-
-### :running: Run Locally
-
-Start the client (frontend)
+Install backend dependencies (Flask)
 
 ```bash
+cd ../backend
+python -m venv venv
+```
+
+Activate venv:
+
+* **Windows (PowerShell)**:
+
+```bash
+venv\Scripts\Activate.ps1
+```
+
+* **macOS/Linux**:
+
+```bash
+source venv/bin/activate
+```
+
+Install Python requirements:
+
+```bash
+pip install -r requirements.txt
+```
+
+### :running: Run Locally
+```md
+### :running: Run Locally
+
+#### 1) Start the server (backend) — Flask (Terminal 1)
+
+```bash
+cd backend
+````
+
+Activate venv (if not already activated) and run Flask:
+
+* **Windows (PowerShell)**:
+
+```bash
+venv\Scripts\Activate.ps1
+$env:FLASK_APP="app.py"
+$env:FLASK_ENV="development"
+flask run --host 127.0.0.1 --port 5000
+```
+
+* **macOS/Linux**:
+
+```bash
+source venv/bin/activate
+export FLASK_APP=app.py
+export FLASK_ENV=development
+flask run --host 127.0.0.1 --port 5000
+```
+
+#### 2) Start the client (frontend) — React (Terminal 2)
+
+```bash
+cd frontend
 npm run dev
 ```
 
-Start the server (backend) in a separate terminal (if applicable)
-
-```bash
-npm run server
-```
-
-<!-- Deployment -->
-
-### :triangular_flag_on_post: Deployment
-
-```bash
-npm run build
-npm run start
-```
-
+Frontend will run (usually) on `http://localhost:5173` and backend on `http://127.0.0.1:5000`.
+````
 
 <!-- Usage -->
 ## :eyes: Usage
@@ -375,6 +431,18 @@ The entire application is built with a **responsive layout**:
 * filters collapse into compact panels
 * cards and charts reflow into a single-column layout on mobile
   This ensures the same features (exploration, statistics, favorites) remain usable across devices and screen sizes.
+
+
+<!-- OpenAPI -->
+## OpenAPI Specification
+
+The REST API is documented using **OpenAPI 3.0**.
+
+- Spec file: `docs/openapi.yaml`
+- Base URL: `http://localhost:5000`
+- Auth: session cookie (Flask-Login), so the frontend must send requests with credentials enabled.
+
+(Optional) You can view the spec in Swagger UI by opening the YAML file in Swagger Editor or by running a local Swagger UI container.
 
 <!-- Roadmap -->
 ## :compass: Roadmap

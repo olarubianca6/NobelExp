@@ -1,0 +1,16 @@
+@prefix as: <https://www.w3.org/ns/activitystreams#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix nexp: <https://nobel-explorer.example/ns#> .
+@prefix schema: <https://schema.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:nobel-explorer:user:7> a foaf:Person ;
+    foaf:mbox <mailto:test@mail.com> ;
+    schema:mail "test@mail.com" .
+
+[] a as:Like ;
+    nexp:kind "prize" ;
+    schema:dateCreated "2026-01-11T19:35:16.715391+00:00"^^xsd:dateTime ;
+    as:actor <urn:nobel-explorer:user:7> ;
+    as:object <http://data.nobelprize.org/resource/nobelprize/Chemistry/2025> .
+

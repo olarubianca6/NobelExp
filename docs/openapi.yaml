@@ -1,0 +1,558 @@
+openapi: 3.0.3
+info:
+  title: Nobel Prize Explorer API
+  version: 1.0.0
+  description: |
+    REST API for Nobel Prize Explorer (Flask).
+    - Auth uses Flask-Login session cookies (supports_credentials=true in CORS).
+    - Nobel/Laureates data is fetched from the Nobel SPARQL endpoint and may be enriched with DBpedia/Wikidata.
+    - Favorites are stored locally as RDF ActivityStreams Like triples (Turtle file: data/local.ttl).
+
+servers:
+  - url: http://localhost:5000
+    description: Local backend
+
+tags:
+  - name: Auth
+    description: Authentication and account lifecycle
+  - name: Nobel
+    description: Nobel prizes list, count and statistics (SPARQL-backed)
+  - name: Laureates
+    description: Laureates list and details (SPARQL-backed)
+  - name: RDF
+    description: RDF-backed likes (favorites)
+
+components:
+  securitySchemes:
+    sessionCookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: Flask session cookie set after successful /auth/login.
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error: { type: string }
+        hint: { type: string, nullable: true }
+        status: { type: integer, nullable: true }
+        details: { type: string, nullable: true }
+        contentType: { type: string, nullable: true }
+        meta: { type: object, nullable: true }
+      required: [error]
+
+    MessageResponse:
+      type: object
+      properties:
+        message: { type: string }
+      required: [message]
+
+    AuthRegisterRequest:
+      type: object
+      properties:
+        mail:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          example: StrongPassword123!
+      required: [mail, password]
+
+    AuthLoginRequest:
+      type: object
+      properties:
+        mail:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          example: StrongPassword123!
+      required: [mail, password]
+
+    AuthCheckResponse:
+      type: object
+      properties:
+        user:
+          type: string
+          format: email
+          example: user@example.com
+      required: [user]
+
+    Like:
+      type: object
+      description: A saved favorite stored as an RDF ActivityStreams Like.
+      properties:
+        object:
+          type: string
+          description: The liked URI (e.g., a Nobel Prize URI)
+          example: http://data.nobelprize.org/resource/nobelprize/2019-physics
+        createdAt:
+          type: string
+          nullable: true
+          description: Timestamp when the Like was created (if present)
+          example: 2026-01-10T12:30:00Z
+        kind:
+          type: string
+          nullable: true
+          description: Internal marker (e.g., "prize")
+          example: prize
+      required: [object]
+
+    LikesListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Like" }
+      required: [data]
+
+    AddLikeRequest:
+      type: object
+      properties:
+        uri:
+          type: string
+          example: http://data.nobelprize.org/resource/nobelprize/2019-physics
+        kind:
+          type: string
+          example: prize
+      required: [uri, kind]
+
+    AddLikeResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Saved as RDF Like
+        uri:
+          type: string
+          example: http://data.nobelprize.org/resource/nobelprize/2019-physics
+        kind:
+          type: string
+          example: prize
+      required: [message, uri, kind]
+
+    RemoveLikeResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Removed
+        removed:
+          description: Whether a like was removed (implementation-specific; may be boolean or integer)
+          oneOf:
+            - type: boolean
+            - type: integer
+      required: [message, removed]
+
+    NobelPrize:
+      type: object
+      description: Prize entry returned by the backend (fields may vary depending on SPARQL query).
+      additionalProperties: true
+
+    NobelPrizesMeta:
+      type: object
+      description: Pagination/meta info returned by the backend.
+      additionalProperties: true
+
+    NobelPrizesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/NobelPrize" }
+        meta:
+          $ref: "#/components/schemas/NobelPrizesMeta"
+      required: [data, meta]
+
+    NobelCountResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 630
+      required: [total]
+
+    NobelStatsResponse:
+      type: object
+      description: Statistics payload returned by /api/nobel/stats (structure depends on SPARQL aggregation).
+      additionalProperties: true
+
+    LaureateSummary:
+      type: object
+      description: Laureate row returned by /api/laureates/.
+      additionalProperties: true
+
+    LaureateDetails:
+      type: object
+      description: Laureate detail payload returned by /api/laureates/{id}.
+      additionalProperties: true
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AuthRegisterRequest" }
+      responses:
+        "201":
+          description: Account created (email confirmation required)
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /auth/confirm/{token}:
+    get:
+      tags: [Auth]
+      summary: Confirm email using token
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Email confirmed
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          description: Invalid/expired token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: User not found for token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login (creates session cookie)
+      description: |
+        On success, Flask sets a session cookie used by endpoints protected with @login_required.
+        The frontend must send requests with credentials enabled.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AuthLoginRequest" }
+      responses:
+        "200":
+          description: Logged in
+          headers:
+            Set-Cookie:
+              description: Flask session cookie
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "403":
+          description: Email not confirmed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout (requires session)
+      security:
+        - sessionCookieAuth: []
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /auth/check:
+    get:
+      tags: [Auth]
+      summary: Check current session
+      security:
+        - sessionCookieAuth: []
+      responses:
+        "200":
+          description: Session is valid
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthCheckResponse" }
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /auth/delete:
+    delete:
+      tags: [Auth]
+      summary: Delete current account
+      security:
+        - sessionCookieAuth: []
+      responses:
+        "200":
+          description: Account deleted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /api/nobel/:
+    get:
+      tags: [Nobel]
+      summary: Get Nobel prizes (paginated)
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 0, default: 10 }
+          description: Page size (SPARQL LIMIT)
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+          description: Offset (SPARQL OFFSET)
+        - in: query
+          name: category
+          schema: { type: string }
+          description: Optional category URI filter
+      responses:
+        "200":
+          description: List of prizes + meta
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NobelPrizesResponse" }
+        "400":
+          description: limit/offset must be integers and >= 0
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "502":
+          description: SPARQL failed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /api/nobel/count:
+    get:
+      tags: [Nobel]
+      summary: Count Nobel prizes
+      parameters:
+        - in: query
+          name: category
+          schema: { type: string }
+          description: Optional category URI filter
+      responses:
+        "200":
+          description: Total count
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NobelCountResponse" }
+        "502":
+          description: SPARQL failed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /api/nobel/stats:
+    get:
+      tags: [Nobel]
+      summary: Get Nobel statistics
+      parameters:
+        - in: query
+          name: category
+          schema: { type: string }
+          description: Optional category URI filter
+        - in: query
+          name: yearFrom
+          schema: { type: string }
+          description: Optional start year (e.g., 1950)
+        - in: query
+          name: yearTo
+          schema: { type: string }
+          description: Optional end year (e.g., 2020)
+      responses:
+        "200":
+          description: Statistics payload
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NobelStatsResponse" }
+        "502":
+          description: SPARQL failed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /api/laureates/:
+    get:
+      tags: [Laureates]
+      summary: Get laureates
+      responses:
+        "200":
+          description: Laureates list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/LaureateSummary" }
+        "404":
+          description: Empty result (query valid but matched 0 rows)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "502":
+          description: SPARQL failed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /api/laureates/{id}:
+    get:
+      tags: [Laureates]
+      summary: Get laureate by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9]+$"
+          description: Numeric laureate id
+      responses:
+        "200":
+          description: Laureate details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LaureateDetails" }
+        "400":
+          description: Invalid id (must be numeric)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Laureate not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "502":
+          description: SPARQL failed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /api/rdf/likes:
+    get:
+      tags: [RDF]
+      summary: List current user's likes
+      security:
+        - sessionCookieAuth: []
+      responses:
+        "200":
+          description: Likes list
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LikesListResponse" }
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+    post:
+      tags: [RDF]
+      summary: Add a new RDF Like (favorite)
+      security:
+        - sessionCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AddLikeRequest" }
+            examples:
+              savePrize:
+                value:
+                  uri: "http://data.nobelprize.org/resource/nobelprize/2019-physics"
+                  kind: "prize"
+      responses:
+        "201":
+          description: Like stored
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AddLikeResponse" }
+        "400":
+          description: Missing uri/kind
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+    delete:
+      tags: [RDF]
+      summary: Remove a like by URI
+      security:
+        - sessionCookieAuth: []
+      parameters:
+        - in: query
+          name: uri
+          required: true
+          schema: { type: string }
+          description: The URI to remove from likes
+      responses:
+        "200":
+          description: Like removed (if existed)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RemoveLikeResponse" }
+        "400":
+          description: Missing uri query param
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }

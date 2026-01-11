@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nobel Prize Explorer — Scholarly Technical Report</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-900">
+  <header class="max-w-5xl mx-auto px-6 pt-10">
+    <div class="bg-white rounded-2xl shadow p-8">
+      <h1 class="text-3xl font-bold">Nobel Prize Explorer</h1>
+      <p class="mt-2 text-gray-600">
+        A SPARQL-powered web platform for exploring Nobel prizes and laureates, with a REST API layer and RDF-based user actions (favorites stored as ActivityStreams “Like” in Turtle).
+      </p>
+
+      <dl class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+        <div class="bg-gray-50 rounded-xl p-4">
+          <dt class="font-semibold">Authors</dt>
+          <dd class="text-gray-700">Bojescu Bianca, Olaru Bianca</dd>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-4">
+          <dt class="font-semibold">Project Type</dt>
+          <dd class="text-gray-700">Semantic Web Application (SPARQL + RDF + REST API)</dd>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-4">
+          <dt class="font-semibold">Repository</dt>
+          <a class="text-gray-700 hover:underline" href="https://github.com/olarubianca6/NobelExp">NobelExp (GitHub)</a>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-4">
+          <dt class="font-semibold">Video Demo</dt>
+          <a class="text-gray-700 hover:underline" href="https://www.youtube.com/watch?v=A20fdzOnk8g">YouTube</a>
+        </div>
+      </dl>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-6 pb-16">
+    <nav class="mt-6 bg-white rounded-2xl shadow p-8">
+      <h2 class="text-xl font-bold">Table of Contents</h2>
+      <ol class="mt-4 list-decimal ml-5 space-y-1 text-sm">
+        <li><a class="text-indigo-700 hover:underline" href="#abstract">Abstract</a></li>
+        <li><a class="text-indigo-700 hover:underline" href="#architecture">System Architecture (SOA + C4)</a></li>
+        <li><a class="text-indigo-700 hover:underline" href="#data-models">Internal Data Models</a></li>
+        <li><a class="text-indigo-700 hover:underline" href="#api">API Design (REST + OpenAPI)</a></li>
+        <li><a class="text-indigo-700 hover:underline" href="#rdf">RDF Knowledge Model</a></li>
+        <li><a class="text-indigo-700 hover:underline" href="#external">External Knowledge Sources + SPARQL</a></li>
+        <li><a class="text-indigo-700 hover:underline" href="#linked-data">Linked Data Principles</a></li>
+        <li><a class="text-indigo-700 hover:underline" href="#user-guide">User Guide + Case Studies</a></li>
+        <li><a class="text-indigo-700 hover:underline" href="#future">Future Work</a></li>
+      </ol>
+    </nav>
+
+    <section id="abstract" class="mt-6 bg-white rounded-2xl shadow p-8">
+      <h2 class="text-2xl font-bold">1. Abstract</h2>
+      <p class="mt-3 text-gray-700 leading-relaxed">
+        Nobel Prize Explorer is a web application that integrates with the official Nobel Prize SPARQL endpoint to retrieve Nobel prizes,
+        laureates and their relationships. The platform provides a responsive UI for exploration (filters + pagination),
+        a statistics area based on SPARQL aggregations, and user-specific favorites stored as RDF (ActivityStreams Like) in a local Turtle file.
+      </p>
+      <p class="mt-3 text-gray-700 leading-relaxed">
+        The backend is implemented in Python (Flask) and exposes a REST API that abstracts SPARQL complexity and returns JSON.
+        Authentication relies on Flask-Login session cookies, with email confirmation via Mailtrap (testing inbox).
+      </p>
+    </section>
+
+    <section id="architecture" class="mt-6 bg-white rounded-2xl shadow p-8">
+      <h2 class="text-2xl font-bold">2. System Architecture (SOA + C4)</h2>
+
+      <h3 class="mt-4 text-xl font-semibold">2.1 High-level SOA</h3>
+      <ul class="mt-2 list-disc ml-6 text-gray-700">
+        <li><b>Frontend (React + Tailwind + Zustand)</b>: pages for prizes, laureates, statistics, favorites, authentication.</li>
+        <li><b>Backend (Flask)</b>: REST API endpoints, session-based auth, SPARQL client, RDF local store.</li>
+        <li><b>External endpoints</b>: Nobel Prize SPARQL endpoint (core data source).</li>
+        <li><b>Persistence</b>: SQLite (users) + Turtle file (RDF likes).</li>
+      </ul>
+
+      <h3 class="mt-6 text-xl font-semibold">2.2 C4 Diagrams</h3>
+
+      <div class="mt-4 grid grid-cols-1 gap-4">
+        <figure class="bg-gray-50 rounded-xl p-4">
+          <img class="w-full rounded-lg border" src="assets/diagrams/c4-context.png" alt="C4 Context Diagram">
+          <figcaption class="mt-2 text-sm text-gray-600">Figure 1 — C4 Level 1: System Context.</figcaption>
+        </figure>
+
+        <figure class="bg-gray-50 rounded-xl p-4">
+          <img class="w-full rounded-lg border" src="assets/diagrams/c4-container.png" alt="C4 Container Diagram">
+          <figcaption class="mt-2 text-sm text-gray-600">Figure 2 — C4 Level 2: Containers (React SPA, Flask API, external SPARQL, SQLite, TTL store).</figcaption>
+        </figure>
+
+        <figure class="bg-gray-50 rounded-xl p-4">
+          <img class="w-full rounded-lg border" src="assets/diagrams/c4-component.png" alt="C4 Component Diagram">
+          <figcaption class="mt-2 text-sm text-gray-600">Figure 3 — C4 Level 3: Components (controllers, services, repositories, RDF store).</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="data-models" class="mt-6 bg-white rounded-2xl shadow p-8">
+      <h2 class="text-2xl font-bold">3. Internal Data Models</h2>
+
+      <h3 class="mt-4 text-xl font-semibold">3.1 SQL (SQLite via SQLAlchemy)</h3>
+      <p class="mt-2 text-gray-700">
+        The relational store persists application users and email-confirmation state.
+        Core entity: <code class="bg-gray-100 px-1 rounded">User</code> with (id, mail, password hash, confirmed flag).
+      </p>
+
+      <h3 class="mt-4 text-xl font-semibold">3.2 RDF Local Store (Turtle)</h3>
+      <p class="mt-2 text-gray-700">
+        Favorites are stored as RDF nodes of type <code class="bg-gray-100 px-1 rounded">as:Like</code>,
+        linking the actor (user URI) to an object (e.g., a Nobel prize URI), together with timestamps
+        (<code class="bg-gray-100 px-1 rounded">schema:dateCreated</code>) and an internal kind marker
+        (<code class="bg-gray-100 px-1 rounded">nexp:kind</code>).
+      </p>
+    </section>
+
+    <section id="api" class="mt-6 bg-white rounded-2xl shadow p-8">
+      <h2 class="text-2xl font-bold">4. API Design (REST + OpenAPI)</h2>
+
+      <h3 class="mt-4 text-xl font-semibold">4.1 REST Endpoints Overview</h3>
+      <ul class="mt-2 list-disc ml-6 text-gray-700">
+        <li><code class="bg-gray-100 px-1 rounded">/auth/register</code>, <code class="bg-gray-100 px-1 rounded">/auth/login</code>, <code class="bg-gray-100 px-1 rounded">/auth/logout</code>, <code class="bg-gray-100 px-1 rounded">/auth/check</code>, <code class="bg-gray-100 px-1 rounded">/auth/delete</code></li>
+        <li><code class="bg-gray-100 px-1 rounded">/api/nobel</code> (list prizes with limit/offset/category)</li>
+        <li><code class="bg-gray-100 px-1 rounded">/api/nobel/count</code> (count prizes for pagination)</li>
+        <li><code class="bg-gray-100 px-1 rounded">/api/nobel/stats</code> (aggregations; optional yearFrom/yearTo)</li>
+        <li><code class="bg-gray-100 px-1 rounded">/api/laureates</code> and <code class="bg-gray-100 px-1 rounded">/api/laureates/&lt;id&gt;</code></li>
+        <li><code class="bg-gray-100 px-1 rounded">/api/rdf/likes</code> (GET/POST/DELETE, requires session cookie)</li>
+      </ul>
+
+      <h3 class="mt-4 text-xl font-semibold">4.2 OpenAPI Specification</h3>
+      <p class="mt-2 text-gray-700">
+        The complete OpenAPI 3.0 definition is provided in
+        <code class="bg-gray-100 px-1 rounded">docs/openapi.yaml</code>.
+      </p>
+      <div class="mt-3 bg-gray-50 rounded-xl p-4 text-sm text-gray-700">
+        <p class="font-semibold">How to view it:</p>
+        <ul class="mt-2 list-disc ml-6">
+          <li>Open the YAML file in Swagger Editor (paste content) or any OpenAPI viewer.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="rdf" class="mt-6 bg-white rounded-2xl shadow p-8">
+      <h2 class="text-2xl font-bold">5. RDF Knowledge Model</h2>
+      <p class="mt-3 text-gray-700">
+        The application reuses established vocabularies such as ActivityStreams (<code class="bg-gray-100 px-1 rounded">as:</code>),
+        Schema.org (<code class="bg-gray-100 px-1 rounded">schema:</code>), FOAF (<code class="bg-gray-100 px-1 rounded">foaf:</code>) and XSD.
+        This ensures interoperability and enables favorites to be queried as a graph, not only as relational rows.
+      </p>
+
+      <div class="mt-4 bg-gray-50 rounded-xl p-4">
+        <p class="text-sm text-gray-700">
+          <span class="font-semibold">RDF “Like” pattern:</span>
+          each saved item is represented as an <code class="bg-gray-100 px-1 rounded">as:Like</code> node with:
+          <code class="bg-gray-100 px-1 rounded">as:actor</code> (user URI),
+          <code class="bg-gray-100 px-1 rounded">as:object</code> (saved Nobel resource URI),
+          <code class="bg-gray-100 px-1 rounded">schema:dateCreated</code> (timestamp),
+          <code class="bg-gray-100 px-1 rounded">nexp:kind</code> (internal type marker).
+        </p>
+      </div>
+    </section>
+
+    <section id="external" class="mt-6 bg-white rounded-2xl shadow p-8">
+      <h2 class="text-2xl font-bold">6. External Knowledge Sources + SPARQL</h2>
+      <p class="mt-3 text-gray-700">
+        Nobel data is retrieved through SPARQL queries against the Nobel Prize endpoint.
+        The backend implements pagination-friendly patterns (LIMIT/OFFSET + a second VALUES-based detail query)
+        to keep responses bounded and stable.
+      </p>
+
+      <h3 class="mt-4 text-xl font-semibold">6.1 Non-trivial SPARQL Queries (examples)</h3>
+      <p class="mt-2 text-gray-700">
+        Include here the exact queries you already use in the backend for: (1) pagination page URIs, (2) fetching details for that page,
+        (3) COUNT for total results, (4) stats aggregations (GROUP BY).
+      </p>
+    </section>
+
+    <section id="linked-data" class="mt-6 bg-white rounded-2xl shadow p-8">
+      <h2 class="text-2xl font-bold">7. Linked Data Principles</h2>
+      <ul class="mt-3 list-disc ml-6 text-gray-700">
+        <li><b>URIs</b>: Nobel entities are identified by stable URIs from the public dataset.</li>
+        <li><b>Reuse of vocabularies</b>: ActivityStreams + Schema.org + FOAF ensure semantic interoperability.</li>
+        <li><b>RDF serialization</b>: user actions are stored in Turtle (non-proprietary, machine-readable).</li>
+        <li><b>Linkability</b>: favorites reference external URIs directly, enabling future enrichment and federated exploration.</li>
+      </ul>
+    </section>
+
+    <section id="user-guide" class="mt-6 bg-white rounded-2xl shadow p-8">
+      <h2 class="text-2xl font-bold">8. User Guide + Use Cases</h2>
+
+      <p class="mt-3 text-gray-700 leading-relaxed">
+        This section documents the end-to-end behavior of Nobel Prize Explorer using use-case style specifications.
+        Each use case is linked to the corresponding UI .png and mapped to the REST API endpoints that
+        orchestrate SPARQL queries and RDF/SQL persistence.
+      </p>
+
+      <div class="mt-4 bg-gray-50 rounded-xl p-4 text-sm text-gray-700">
+        <p class="font-semibold">Runtime assumptions</p>
+        <ul class="mt-2 list-disc ml-6 space-y-1">
+          <li>Frontend: <code class="bg-gray-100 px-1 rounded">http://localhost:5173</code></li>
+          <li>Backend API: <code class="bg-gray-100 px-1 rounded">http://localhost:5000</code></li>
+          <li>Session auth: Flask-Login cookie (frontend must send requests with credentials enabled).</li>
+          <li>External data source: Nobel Prize SPARQL endpoint (read-only).</li>
+          <li>Persistence: SQLite for users + Turtle file for RDF Likes.</li>
+        </ul>
+      </div>
+
+      <!-- 8.0 Overview of Use Cases -->
+      <h3 class="mt-8 text-xl font-semibold">8.0 Use Case Overview</h3>
+      <div class="mt-3 overflow-x-auto">
+        <table class="w-full text-sm border-separate border-spacing-0">
+          <thead>
+            <tr class="text-left">
+              <th class="py-2 pr-4 font-semibold">UC</th>
+              <th class="py-2 pr-4 font-semibold">Name</th>
+              <th class="py-2 pr-4 font-semibold">Primary Actor</th>
+              <th class="py-2 pr-4 font-semibold">Main Output</th>
+            </tr>
+          </thead>
+          <tbody class="text-gray-700">
+            <tr class="border-t">
+              <td class="py-2 pr-4">UC-01</td>
+              <td class="py-2 pr-4">Register Account</td>
+              <td class="py-2 pr-4">User</td>
+              <td class="py-2 pr-4">Pending account + confirmation email</td>
+            </tr>
+            <tr class="border-t">
+              <td class="py-2 pr-4">UC-02</td>
+              <td class="py-2 pr-4">Confirm Email</td>
+              <td class="py-2 pr-4">User</td>
+              <td class="py-2 pr-4">Account activated</td>
+            </tr>
+            <tr class="border-t">
+              <td class="py-2 pr-4">UC-03</td>
+              <td class="py-2 pr-4">Login / Session Establishment</td>
+              <td class="py-2 pr-4">User</td>
+              <td class="py-2 pr-4">Authenticated session cookie</td>
+            </tr>
+            <tr class="border-t">
+              <td class="py-2 pr-4">UC-04</td>
+              <td class="py-2 pr-4">Browse Prizes with Filters + Pagination</td>
+              <td class="py-2 pr-4">User</td>
+              <td class="py-2 pr-4">Paginated prize cards from SPARQL</td>
+            </tr>
+            <tr class="border-t">
+              <td class="py-2 pr-4">UC-05</td>
+              <td class="py-2 pr-4">View Laureate Profile</td>
+              <td class="py-2 pr-4">User</td>
+              <td class="py-2 pr-4">Laureate metadata + award linkage</td>
+            </tr>
+            <tr class="border-t">
+              <td class="py-2 pr-4">UC-06</td>
+              <td class="py-2 pr-4">Save / Remove Favorites (RDF Like)</td>
+              <td class="py-2 pr-4">User</td>
+              <td class="py-2 pr-4">RDF Like persisted in Turtle</td>
+            </tr>
+            <tr class="border-t">
+              <td class="py-2 pr-4">UC-07</td>
+              <td class="py-2 pr-4">Statistics Dashboard (Aggregations)</td>
+              <td class="py-2 pr-4">User</td>
+              <td class="py-2 pr-4">Aggregated counts + charts</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- UC-01 -->
+      <h3 class="mt-10 text-xl font-semibold">8.1 UC-01 — Register Account</h3>
+      <div class="mt-2 text-gray-700 space-y-2">
+        <p><b>Goal:</b> Create a new user account and initiate email verification.</p>
+        <p><b>Primary Actor:</b> User</p>
+        <p><b>Preconditions:</b> The email is not already registered.</p>
+        <p><b>Trigger:</b> User submits the Register form.</p>
+
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="font-semibold">Main Success Scenario</p>
+          <ol class="mt-2 list-decimal ml-6 space-y-1">
+            <li>User opens the Register page and enters email + password.</li>
+            <li>Frontend validates basic input (format/required fields) and sends a register request.</li>
+            <li>Backend hashes the password and stores the user with <code class="bg-gray-100 px-1 rounded">confirmed=false</code>.</li>
+            <li>Backend generates a confirmation token and sends a confirmation email via Mailtrap SMTP.</li>
+            <li>Frontend displays the “registration success” page with instructions.</li>
+          </ol>
+        </div>
+
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="font-semibold">Alternative / Error Flows</p>
+          <ul class="mt-2 list-disc ml-6 space-y-1">
+            <li><b>A1:</b> Email already exists → backend returns an error; frontend displays a message.</li>
+            <li><b>A2:</b> Mail sending fails → account may exist but user is not confirmable; frontend displays retry instructions.</li>
+          </ul>
+        </div>
+
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="font-semibold">API + Data Impact</p>
+          <ul class="mt-2 list-disc ml-6 space-y-1">
+            <li><b>Endpoint:</b> <code class="bg-gray-100 px-1 rounded">POST /auth/register</code></li>
+            <li><b>Data written:</b> SQLite (<code class="bg-gray-100 px-1 rounded">User</code> row)</li>
+            <li><b>External system:</b> Mailtrap SMTP (email delivery in testing inbox)</li>
+          </ul>
+        </div>
+
+        <figure class="mt-4 bg-gray-50 rounded-xl p-4">
+          <img class="w-full rounded-lg border" src="assets/usage/01-register.png" alt="Register page" />
+          <figcaption class="mt-2 text-sm text-gray-600">Figure 13 — Register page.</figcaption>
+        </figure>
+
+        <figure class="mt-4 bg-gray-50 rounded-xl p-4">
+          <img class="w-full rounded-lg border" src="assets/usage/02-register-success.png" alt="Register success page" />
+          <figcaption class="mt-2 text-sm text-gray-600">Figure 14 — Registration success message.</figcaption>
+        </figure>
+      </div>
+
+      <!-- UC-02 -->
+      <h3 class="mt-10 text-xl font-semibold">8.2 UC-02 — Confirm Email</h3>
+      <div class="mt-2 text-gray-700 space-y-2">
+        <p><b>Goal:</b> Activate the account by validating the emailed confirmation token.</p>
+        <p><b>Primary Actor:</b> User</p>
+        <p><b>Preconditions:</b> User has a pending (unconfirmed) account and can access the Mailtrap inbox.</p>
+        <p><b>Trigger:</b> User clicks the “Confirm email” link received by email.</p>
+
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="font-semibold">Main Success Scenario</p>
+          <ol class="mt-2 list-decimal ml-6 space-y-1">
+            <li>User opens Mailtrap and locates the confirmation email.</li>
+            <li>User clicks the confirmation link which calls the backend confirmation route.</li>
+            <li>Backend validates token integrity and expiry, then updates user state to confirmed.</li>
+            <li>Frontend shows an “Email confirmed successfully” screen.</li>
+          </ol>
+        </div>
+
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="font-semibold">Alternative / Error Flows</p>
+          <ul class="mt-2 list-disc ml-6 space-y-1">
+            <li><b>A1:</b> Token expired → user must re-register or request a new token (if implemented).</li>
+            <li><b>A2:</b> Token invalid/tampered → backend rejects confirmation.</li>
+          </ul>
+        </div>
+
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="font-semibold">API + Data Impact</p>
+          <ul class="mt-2 list-disc ml-6 space-y-1">
+            <li><b>Endpoint:</b> <code class="bg-gray-100 px-1 rounded">GET /auth/confirm/&lt;token&gt;</code> (or similar)</li>
+            <li><b>Data updated:</b> SQLite user row (<code class="bg-gray-100 px-1 rounded">confirmed=true</code>)</li>
+          </ul>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <figure class="bg-gray-50 rounded-xl p-4">
+            <img class="w-full rounded-lg border bg-white" src="assets/usage/03-mailtrap-confirm.png" alt="Mailtrap confirmation email" />
+            <figcaption class="mt-2 text-sm text-gray-600">Figure 15 — Confirmation email in Mailtrap.</figcaption>
+          </figure>
+          <figure class="bg-gray-50 rounded-xl p-4">
+            <img class="w-full rounded-lg border bg-white" src="assets/usage/04-email-confirmed.png" alt="Email confirmed page" />
+            <figcaption class="mt-2 text-sm text-gray-600">Figure 16 — In-app email confirmed screen.</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <!-- UC-04 -->
+      <h3 class="mt-10 text-xl font-semibold">8.3 UC-04 — Browse Prizes with Filters + Pagination</h3>
+      <div class="mt-2 text-gray-700 space-y-2">
+        <p><b>Goal:</b> Explore Nobel prizes efficiently via category filter + bounded pagination.</p>
+        <p><b>Primary Actor:</b> User</p>
+        <p><b>Preconditions:</b> Backend can access the Nobel SPARQL endpoint.</p>
+        <p><b>Trigger:</b> User opens the Prizes page or applies filters.</p>
+
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="font-semibold">Main Success Scenario</p>
+          <ol class="mt-2 list-decimal ml-6 space-y-1">
+            <li>User opens the Prizes page.</li>
+            <li>User optionally selects a category and a page size (limit).</li>
+            <li>Frontend requests a page of prizes from the backend.</li>
+            <li>Backend issues SPARQL queries using a pagination strategy (<b>LIMIT/OFFSET</b>).</li>
+            <li>Backend returns JSON; frontend renders responsive cards and pagination controls.</li>
+          </ol>
+        </div>
+
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="font-semibold">Implementation Detail (Performance Pattern)</p>
+          <ul class="mt-2 list-disc ml-6 space-y-1">
+            <li>Use a first SPARQL query to fetch only prize URIs for the current page.</li>
+            <li>Use a second SPARQL query with <code class="bg-gray-100 px-1 rounded">VALUES</code> to fetch details for those URIs.</li>
+            <li>Use a separate <code class="bg-gray-100 px-1 rounded">COUNT(DISTINCT ?prize)</code> query to compute total results.</li>
+          </ul>
+        </div>
+
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="font-semibold">API + Data Impact</p>
+          <ul class="mt-2 list-disc ml-6 space-y-1">
+            <li><b>Endpoints:</b>
+              <code class="bg-gray-100 px-1 rounded">GET /api/nobel</code>,
+              <code class="bg-gray-100 px-1 rounded">GET /api/nobel/count</code>
+            </li>
+            <li><b>External system:</b> Nobel Prize SPARQL endpoint (read-only)</li>
+          </ul>
+        </div>
+
+        <figure class="mt-4 bg-gray-50 rounded-xl p-4">
+          <img class="w-full rounded-lg border" src="assets/usage/05-prizes-page.png" alt="Prizes page" />
+          <figcaption class="mt-2 text-sm text-gray-600">Figure 17 — Prizes page (filters + pagination).</figcaption>
+        </figure>
+      </div>
+
+      <!-- UC-06 -->
+      <h3 class="mt-10 text-xl font-semibold">8.4 UC-06 — Save / Remove Favorites (RDF Like)</h3>
+      <div class="mt-2 text-gray-700 space-y-2">
+        <p><b>Goal:</b> Persist user favorites as Linked Data (ActivityStreams Like) and manage them (list/remove).</p>
+        <p><b>Primary Actor:</b> User</p>
+        <p><b>Preconditions:</b> User is authenticated (valid session cookie).</p>
+        <p><b>Trigger:</b> User clicks Save on a prize card or Remove on favorites.</p>
+
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="font-semibold">Main Success Scenario — Save</p>
+          <ol class="mt-2 list-decimal ml-6 space-y-1">
+            <li>User clicks <b>Save</b> on a prize card.</li>
+            <li>Frontend sends an authenticated request to the Likes endpoint.</li>
+            <li>Backend creates an RDF node of type <code class="bg-gray-100 px-1 rounded">as:Like</code>.</li>
+            <li>Backend writes triples:
+              <code class="bg-gray-100 px-1 rounded">as:actor</code>,
+              <code class="bg-gray-100 px-1 rounded">as:object</code>,
+              <code class="bg-gray-100 px-1 rounded">schema:dateCreated</code>,
+              <code class="bg-gray-100 px-1 rounded">nexp:kind</code>.
+            </li>
+            <li>Backend persists the graph to <code class="bg-gray-100 px-1 rounded">data/local.ttl</code>.</li>
+          </ol>
+        </div>
+
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="font-semibold">Main Success Scenario — List/Remove</p>
+          <ol class="mt-2 list-decimal ml-6 space-y-1">
+            <li>User opens Favorites page → frontend requests likes for the current user.</li>
+            <li>Backend loads Turtle graph and filters likes by actor (user URI).</li>
+            <li>User clicks Remove → backend deletes triples for the matching Like node and saves the file.</li>
+          </ol>
+        </div>
+
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="font-semibold">API + Data Impact</p>
+          <ul class="mt-2 list-disc ml-6 space-y-1">
+            <li><b>Endpoints:</b>
+              <code class="bg-gray-100 px-1 rounded">GET /api/rdf/likes</code>,
+              <code class="bg-gray-100 px-1 rounded">POST /api/rdf/likes</code>,
+              <code class="bg-gray-100 px-1 rounded">DELETE /api/rdf/likes</code>
+            </li>
+            <li><b>Data written:</b> Turtle file (<code class="bg-gray-100 px-1 rounded">data/local.ttl</code>)</li>
+          </ul>
+        </div>
+
+        <figure class="mt-4 bg-gray-50 rounded-xl p-4">
+          <img class="w-full rounded-lg border" src="assets/usage/06-favorites.png" alt="Favorites page" />
+          <figcaption class="mt-2 text-sm text-gray-600">Figure 18 — Favorites page (RDF Likes stored in Turtle).</figcaption>
+        </figure>
+      </div>
+
+      <!-- UC-07 -->
+      <h3 class="mt-10 text-xl font-semibold">8.5 UC-07 — Statistics Dashboard (SPARQL Aggregations)</h3>
+      <div class="mt-2 text-gray-700 space-y-2">
+        <p><b>Goal:</b> Provide aggregated insights over Nobel data using server-side SPARQL aggregation queries.</p>
+        <p><b>Primary Actor:</b> User</p>
+        <p><b>Preconditions:</b> SPARQL endpoint is reachable; category/year filters are optional.</p>
+        <p><b>Trigger:</b> User opens Statistics page or applies filters.</p>
+
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="font-semibold">Main Success Scenario</p>
+          <ol class="mt-2 list-decimal ml-6 space-y-1">
+            <li>User opens the Statistics dashboard.</li>
+            <li>User optionally selects a category and a year interval.</li>
+            <li>Frontend requests statistics from the backend.</li>
+            <li>Backend computes totals and breakdowns using SPARQL (<b>COUNT</b>, <b>GROUP BY</b>).</li>
+            <li>Frontend renders charts and summary numbers responsively.</li>
+          </ol>
+        </div>
+
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="font-semibold">API + Data Impact</p>
+          <ul class="mt-2 list-disc ml-6 space-y-1">
+            <li><b>Endpoint:</b> <code class="bg-gray-100 px-1 rounded">GET /api/nobel/stats</code></li>
+            <li><b>External system:</b> Nobel Prize SPARQL endpoint (read-only)</li>
+          </ul>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 gap-4">
+          <figure class="bg-gray-50 rounded-xl p-4">
+            <img class="w-full rounded-lg border" src="assets/usage/07-statistics-responsive.png" alt="Statistics responsive" />
+            <figcaption class="mt-2 text-sm text-gray-600">Figure 19 — Statistics dashboard (responsive view).</figcaption>
+          </figure>
+          <figure class="bg-gray-50 rounded-xl p-4">
+            <img class="w-full rounded-lg border" src="assets/usage/08-statistics-chemistry.png" alt="Statistics chemistry" />
+            <figcaption class="mt-2 text-sm text-gray-600">Figure 20 — Statistics filtered by Chemistry.</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <!-- Optional demo section right after use cases -->
+      <h3 class="mt-12 text-xl font-semibold" id="demo">8.6 Demo Video</h3>
+      <p class="mt-2 text-gray-700">
+        The following demo showcases the implemented flows: registration + confirmation (Mailtrap),
+        exploration (filters + pagination), laureate profile, RDF favorites, and statistics.
+      </p>
+
+    
+      <div class="mt-4 bg-gray-50 rounded-xl p-4">
+        <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/A20fdzOnk8g?si=PAWhCXIn1zOe2ReL" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        <p class="mt-2 text-sm text-gray-600">Figure 21 — Demo video (YouTube, unlisted).</p>
+      </div>
+    </section>
+
+    <section id="future" class="mt-6 bg-white rounded-2xl shadow p-8">
+      <h2 class="text-2xl font-bold">9. Future Work</h2>
+      <ul class="mt-2 list-disc ml-6 text-gray-700">
+        <li>Optional enrichment with DBpedia/Wikidata (e.g., laureate biographies, institutions, topics).</li>
+        <li>More advanced statistics: demographics (where available), geography, trends across decades.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
