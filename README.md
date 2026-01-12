@@ -16,6 +16,9 @@
   <a href="https://github.com/olarubianca6/NobelExp/issues">
     <img src="https://img.shields.io/github/issues/olarubianca6/NobelExp" alt="open issues" />
   </a>
+  <a href="https://github.com/olarubianca6/NobelExp/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/olarubianca6/NobelExp.svg" alt="license" />
+  </a>
 </p>
    
 <h4>
